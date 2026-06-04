@@ -2,8 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { runDailyGoogleImport } from "@/lib/ingest/google-daily";
 
-// Vercel Hobby (free) limita a 60 s. En Pro puedes subirlo a 120-300.
-export const maxDuration = 60;
+// El import diario tambien enriquece con IA y publica (20 fichas), lo que puede
+// pasar de 60 s. En plan Pro el limite llega a 300 s. (En Hobby/free, bajalo a
+// 60 y reduce DAILY_IMPORT_LIMIT.)
+export const maxDuration = 300;
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;

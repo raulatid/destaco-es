@@ -29,21 +29,18 @@ export async function Hero() {
       />
 
       <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 lg:px-8">
-        <Link
-          href="/blog/directorio-con-ia"
-          className="border-border bg-card text-muted-foreground hover:text-foreground mx-auto inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm transition-colors"
-        >
+        <span className="border-border bg-card text-muted-foreground mx-auto inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm">
           <Sparkles className="size-3.5" />
-          Enriquecido con IA · Actualizado a diario
-        </Link>
+          Actualizado a diario
+        </span>
 
         <h1 className="mx-auto mt-7 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-          El directorio de empresas que Espana necesitaba
+          Directorio de empresas que destacan
         </h1>
 
         <p className="text-muted-foreground mx-auto mt-5 max-w-xl text-lg text-pretty">
-          Miles de negocios verificados, valorados y enriquecidos con IA. Busca
-          por categoria, provincia o ciudad y contacta al instante.
+          Miles de negocios verificados y valorados. Busca por categoria,
+          provincia o ciudad y contacta al instante.
         </p>
 
         <div className="mt-9">

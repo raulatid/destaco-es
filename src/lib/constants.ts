@@ -7,12 +7,23 @@ export const SITE = {
   name: "Destaco.es",
   domain: "destaco.es",
   url: process.env.NEXT_PUBLIC_APP_URL ?? "https://destaco.es",
-  tagline: "El directorio empresarial mas moderno de Espana",
+  tagline: "Directorio de empresas que destacan",
   description:
     "Descubre, compara y contacta con las mejores empresas de Espana. " +
     "Miles de negocios verificados por provincia, ciudad y categoria.",
   locale: "es-ES",
   twitter: "@destaco_es",
+} as const;
+
+/**
+ * Titular del sitio y datos para los textos legales (aviso legal, privacidad,
+ * cookies, terminos). Fuente unica de verdad — las paginas de /legal los leen.
+ */
+export const LEGAL = {
+  ownerName: "Raúl Díaz Tapia",
+  nif: "21067209Z",
+  address: "Paseo la Fuente N.º 9, 4.º A",
+  email: "raul@vertigomkt.com",
 } as const;
 
 export type CategoryMeta = {

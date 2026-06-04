@@ -1,4 +1,10 @@
-import { BadgeCheck, MessagesSquare, Scale, Search, Sparkles } from "lucide-react";
+import {
+  BadgeCheck,
+  MessagesSquare,
+  RefreshCw,
+  Scale,
+  Search,
+} from "lucide-react";
 
 import { Reveal } from "@/components/reveal";
 
@@ -11,7 +17,7 @@ const STEPS = [
   {
     icon: Scale,
     title: "Compara",
-    text: "Revisa valoraciones reales, servicios, precios y perfiles enriquecidos con IA para decidir mejor.",
+    text: "Revisa valoraciones reales, servicios y precios para decidir mejor.",
   },
   {
     icon: MessagesSquare,
@@ -22,7 +28,7 @@ const STEPS = [
 
 const FEATURES = [
   { icon: BadgeCheck, label: "Datos verificados" },
-  { icon: Sparkles, label: "Enriquecido con IA" },
+  { icon: RefreshCw, label: "Actualizado a diario" },
   { icon: Search, label: "Busqueda semantica" },
   { icon: Scale, label: "Valoraciones reales" },
 ];

@@ -50,12 +50,15 @@ const absolute = (path: string) => new URL(path, SITE.url).toString();
 const TOP_N = 10;
 
 /**
- * Titulo programatico para landing categoria+ciudad, en el formato pedido:
- * "Las 10 mejores {nicho} en {localidad} - {año} Reseñas".
+ * Titulo programatico para landing categoria+ciudad.
+ *
+ * Formato: "Top 10 {nicho} en {localidad} - {año} Reseñas". Omitimos "empresas
+ * de" a proposito: la gente busca el nicho directo ("restaurantes en Madrid"),
+ * no "empresas de restaurantes". Ese keyword es el que posiciona.
  */
 export function landingTitle(categoryName: string, cityName: string): string {
   const year = new Date().getFullYear();
-  return `Las ${TOP_N} mejores empresas de ${categoryName.toLowerCase()} en ${cityName} - ${year} Reseñas`;
+  return `Top ${TOP_N} ${categoryName.toLowerCase()} en ${cityName} - ${year} Reseñas`;
 }
 
 export function landingDescription(
@@ -68,7 +71,7 @@ export function landingDescription(
   if (count <= 0) {
     return `Directorio de ${noun} en ${cityName}. Compara valoraciones, servicios y contacta al instante. Actualizado en ${year}.`;
   }
-  return `Las mejores ${count} empresas de ${noun} en ${cityName}, ordenadas por valoraciones reales y proyectos. Compara, lee reseñas y contacta al instante (${year}).`;
+  return `Top ${count} ${noun} en ${cityName}: compara valoraciones reales, reseñas y proyectos, y contacta al instante (${year}).`;
 }
 
 /** FAQs generadas para enriquecer la landing y obtener rich results. */
@@ -81,24 +84,24 @@ export function landingFaqs(
   const noun = categoryName.toLowerCase();
   const faqs: { question: string; answer: string }[] = [
     {
-      question: `¿Cuales son las mejores empresas de ${noun} en ${cityName}?`,
+      question: `¿Cuales son los mejores ${noun} en ${cityName}?`,
       answer: topName
         ? `Segun las valoraciones de clientes y nuestro indice de calidad, ${topName} encabeza el ranking de ${noun} en ${cityName}. En esta pagina tienes el listado completo ordenado por puntuacion.`
-        : `Encuentra en esta pagina las empresas de ${noun} mejor valoradas de ${cityName}, ordenadas segun reseñas reales y nuestro indice de calidad.`,
+        : `Encuentra en esta pagina los ${noun} mejor valorados de ${cityName}, ordenados segun reseñas reales y nuestro indice de calidad.`,
     },
     {
       question: `¿Cuanto cuesta contratar ${noun} en ${cityName}?`,
       answer: `El precio depende del alcance del servicio y del proveedor. Compara los perfiles de ${noun} en ${cityName}, revisa sus proyectos y solicita presupuesto sin compromiso a traves de cada ficha.`,
     },
     {
-      question: `¿Como elijo la mejor empresa de ${noun} en ${cityName}?`,
+      question: `¿Como elijo el mejor ${noun} en ${cityName}?`,
       answer: `Fijate en las valoraciones verificadas, el numero de reseñas, los proyectos publicados y la informacion de contacto del perfil. Todos estos factores influyen en el orden del listado.`,
     },
   ];
   if (count > 0) {
     faqs.push({
-      question: `¿Cuantas empresas de ${noun} hay en ${cityName} en Destaco?`,
-      answer: `Actualmente listamos ${count} ${count === 1 ? "empresa" : "empresas"} de ${noun} en ${cityName}, y ampliamos el directorio cada dia con nuevas fichas verificadas.`,
+      question: `¿Cuantos ${noun} hay en ${cityName} en Destaco?`,
+      answer: `Actualmente listamos ${count} ${noun} en ${cityName}, y ampliamos el directorio cada dia con nuevas fichas verificadas.`,
     });
   }
   return faqs;

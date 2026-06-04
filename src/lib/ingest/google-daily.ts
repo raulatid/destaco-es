@@ -66,11 +66,12 @@ export async function runDailyGoogleImport(
   const dayIndex = Math.floor(Date.now() / 86_400_000) % QUERIES.length;
   const query = QUERIES[dayIndex];
 
-  const result = await runIngestion({
-    source: "GOOGLE_PLACES",
-    query,
-    limit: DAILY_IMPORT_LIMIT,
-  });
+  const result = await runIngestion(
+    { source: "GOOGLE_PLACES", query, limit: DAILY_IMPORT_LIMIT },
+    // Publicacion automatica: las fichas nuevas se enriquecen y se publican el
+    // mismo dia, sin pasar por revision manual.
+    { autoEnrich: true, autoPublish: true },
+  );
 
   return { ran: true, ...result };
 }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const PERKS = [
   { icon: BadgeCheck, text: "Reclama y verifica tu perfil gratis" },
-  { icon: Sparkles, text: "Perfil enriquecido y optimizado con IA" },
+  { icon: Sparkles, text: "Perfil completo y optimizado para buscadores" },
   { icon: BarChart3, text: "Estadisticas y leads de clientes reales" },
 ];
 

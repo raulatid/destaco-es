@@ -111,7 +111,7 @@ export function SiteFooter() {
             © {new Date().getFullYear()} {SITE.name}. Hecho en Espana.
           </p>
           <p className="text-muted-foreground text-xs">
-            Datos de fuentes publicas y verificadas. Enriquecido con IA.
+            Datos de fuentes publicas y verificadas.
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@
  */
 import { Prisma } from "@prisma/client";
 
+import { enrichCompany } from "../ai/enrich-service";
 import { prisma } from "../prisma";
 import { toSlug } from "./geo";
 import { searchGooglePlaces } from "./google-places";
@@ -16,6 +17,13 @@ import type { IngestStats, NormalizedCompany } from "./types";
 export type IngestParams =
   | { source: "GOOGLE_PLACES"; query: string; limit?: number }
   | { source: "OPENSTREETMAP"; area: string; category: string; limit?: number };
+
+export interface IngestOptions {
+  /** Enriquecer con IA cada ficha nueva (best-effort) antes de publicar. */
+  autoEnrich?: boolean;
+  /** Publicar las fichas nuevas al terminar (las hace visibles en el directorio). */
+  autoPublish?: boolean;
+}
 
 export interface IngestRunResult {
   jobId: string;
@@ -119,6 +127,7 @@ async function recount(
 
 export async function runIngestion(
   params: IngestParams,
+  options: IngestOptions = {},
 ): Promise<IngestRunResult> {
   const query = describe(params);
   const job = await prisma.ingestionJob.create({
@@ -142,6 +151,7 @@ export async function runIngestion(
   const touchedCategories = new Set<string>();
   const touchedCities = new Set<string>();
   const touchedProvinces = new Set<string>();
+  const createdIds: string[] = [];
 
   try {
     const companies = await fetchCompanies(params);
@@ -208,9 +218,11 @@ export async function runIngestion(
           stats.updated++;
         } else {
           const slug = await uniqueSlug(company.name, company.cityName);
-          await prisma.company.create({
+          const created = await prisma.company.create({
             data: { ...data, slug, status: "DRAFT" },
+            select: { id: true },
           });
+          createdIds.push(created.id);
           stats.created++;
         }
 
@@ -223,6 +235,29 @@ export async function runIngestion(
       }
     }
 
+    // Flujo automatizado (import diario): enriquecer con IA y publicar las
+    // fichas nuevas para que aparezcan en el directorio el mismo dia, sin
+    // intervencion manual. El enriquecimiento es best-effort: si OpenAI falla
+    // o no hay clave, la ficha se publica igualmente con los datos de Maps.
+    if (options.autoEnrich && createdIds.length > 0) {
+      for (const id of createdIds) {
+        try {
+          await enrichCompany(id);
+        } catch (error) {
+          stats.errors++;
+          console.error("Ingesta — enriquecimiento fallido:", error);
+        }
+      }
+    }
+    if (options.autoPublish && createdIds.length > 0) {
+      await prisma.company.updateMany({
+        where: { id: { in: createdIds } },
+        data: { status: "PUBLISHED" },
+      });
+    }
+
+    // El recuento se hace despues de publicar para que companyCount refleje
+    // las fichas nuevas ya visibles.
     await recount(touchedCategories, touchedCities, touchedProvinces);
     await prisma.ingestionJob.update({
       where: { id: job.id },
