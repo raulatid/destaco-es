@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "comment": "Plan free (Hobby) = maximo 2 cron jobs y funciones de 60 s. Si pasas a Pro puedes volver a separar /api/ingest (OSM), /api/ranking y /api/seo y subir maxDuration.",
+  "crons": [
+    {
+      "path": "/api/import",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron",
+      "schedule": "30 5 * * *"
+    }
+  ]
+}

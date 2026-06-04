@@ -1,0 +1,210 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   Destaco.es — Sistema de diseno
+   Monocromo + un unico acento. Inspiracion: Linear, Vercel, Stripe.
+   ============================================================ */
+
+:root {
+  --radius: 0.75rem;
+
+  /* Superficies — escala de grises calida y neutra */
+  --background: oklch(0.992 0 0);
+  --foreground: oklch(0.205 0.004 270);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.205 0.004 270);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.205 0.004 270);
+
+  /* Acento unico — indigo sobrio */
+  --primary: oklch(0.515 0.16 273);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.97 0.002 270);
+  --secondary-foreground: oklch(0.27 0.004 270);
+  --muted: oklch(0.968 0.002 270);
+  --muted-foreground: oklch(0.53 0.006 270);
+  --accent: oklch(0.965 0.003 270);
+  --accent-foreground: oklch(0.27 0.004 270);
+
+  --destructive: oklch(0.58 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.58 0.13 152);
+  --warning: oklch(0.7 0.13 75);
+
+  --border: oklch(0.922 0.003 270);
+  --input: oklch(0.922 0.003 270);
+  --ring: oklch(0.515 0.16 273);
+
+  --chart-1: oklch(0.515 0.16 273);
+  --chart-2: oklch(0.6 0.04 270);
+  --chart-3: oklch(0.7 0.03 270);
+  --chart-4: oklch(0.45 0.03 270);
+  --chart-5: oklch(0.8 0.02 270);
+}
+
+.dark {
+  --background: oklch(0.165 0.003 270);
+  --foreground: oklch(0.96 0.002 270);
+  --card: oklch(0.202 0.004 270);
+  --card-foreground: oklch(0.96 0.002 270);
+  --popover: oklch(0.202 0.004 270);
+  --popover-foreground: oklch(0.96 0.002 270);
+
+  --primary: oklch(0.68 0.14 274);
+  --primary-foreground: oklch(0.16 0.01 270);
+
+  --secondary: oklch(0.255 0.004 270);
+  --secondary-foreground: oklch(0.96 0.002 270);
+  --muted: oklch(0.245 0.004 270);
+  --muted-foreground: oklch(0.68 0.006 270);
+  --accent: oklch(0.27 0.005 270);
+  --accent-foreground: oklch(0.94 0.003 270);
+
+  --destructive: oklch(0.66 0.19 24);
+  --destructive-foreground: oklch(0.96 0.002 270);
+  --success: oklch(0.68 0.13 153);
+  --warning: oklch(0.78 0.13 78);
+
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.68 0.14 274);
+
+  --chart-1: oklch(0.68 0.14 274);
+  --chart-2: oklch(0.65 0.03 270);
+  --chart-3: oklch(0.5 0.02 270);
+  --chart-4: oklch(0.78 0.02 270);
+  --chart-5: oklch(0.4 0.02 270);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --animate-marquee: marquee 40s linear infinite;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+  }
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+  }
+}
+
+/* ---- Utilidades ---- */
+@layer utilities {
+  /* Gradiente sutil mono — solo para acentos puntuales */
+  .bg-brand-gradient {
+    background-image: linear-gradient(
+      150deg,
+      var(--primary),
+      color-mix(in oklch, var(--primary) 78%, black)
+    );
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(
+      120deg,
+      var(--foreground),
+      color-mix(in oklch, var(--foreground) 55%, var(--muted-foreground))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glass {
+    background-color: color-mix(in oklch, var(--background) 78%, transparent);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+
+  /* Fondo de seccion: red de puntos discreta */
+  .dotted-bg {
+    background-image: radial-gradient(
+      color-mix(in oklch, var(--muted-foreground) 22%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
+  }
+
+  /* Halo de luz muy tenue (sin color) */
+  .spotlight {
+    background-image: radial-gradient(
+      42rem 30rem at 50% -10%,
+      color-mix(in oklch, var(--foreground) 6%, transparent),
+      transparent
+    );
+  }
+
+  .animate-marquee {
+    animation: var(--animate-marquee);
+  }
+}

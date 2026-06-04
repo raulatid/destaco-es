@@ -1,0 +1,62 @@
+# Destaco.es — infraestructura local
+#
+#   docker compose up -d            -> arranca PostgreSQL + Redis (desarrollo)
+#   docker compose --profile full up -d -> arranca tambien la app Next.js
+#
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: destaco-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: destaco
+      POSTGRES_PASSWORD: destaco
+      POSTGRES_DB: destaco
+    ports:
+      - "5432:5432"
+    volumes:
+      - destaco-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U destaco -d destaco"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: destaco-redis
+    restart: unless-stopped
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - destaco-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  app:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: destaco-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://destaco:destaco@postgres:5432/destaco?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  destaco-pgdata:
+  destaco-redisdata:

@@ -1,0 +1,794 @@
+// ============================================================
+// Destaco.es — Esquema de base de datos
+// El directorio empresarial mas moderno de Espana.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+
+enum UserRole {
+  USER
+  BUSINESS
+  ADMIN
+}
+
+enum CompanyStatus {
+  DRAFT // recien ingerida, sin enriquecer
+  PENDING // pendiente de aprobacion del admin
+  PUBLISHED // visible en el directorio
+  REJECTED // rechazada por el admin
+  ARCHIVED // ocultada
+}
+
+enum DataSource {
+  MANUAL // alta manual
+  GOOGLE_PLACES // Google Places API
+  OPENSTREETMAP // Overpass / OSM
+  OPEN_DATA // datos.gob.es, BORME, registros publicos
+  CLAIMED // creada/editada por la propia empresa
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+}
+
+enum SocialPlatform {
+  WEBSITE
+  FACEBOOK
+  INSTAGRAM
+  LINKEDIN
+  TWITTER
+  YOUTUBE
+  TIKTOK
+  WHATSAPP
+}
+
+enum JobType {
+  INGEST // descubrir nuevas empresas
+  ENRICH // enriquecer con IA
+  REFRESH // actualizar datos existentes
+  GEOCODE // resolver coordenadas
+  SITEMAP // regenerar sitemaps
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  CONVERTED
+  ARCHIVED
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+
+enum CompanySize {
+  SOLO // autonomo
+  SMALL // 2-10
+  MEDIUM // 11-50
+  LARGE // 51-200
+  ENTERPRISE // 200+
+}
+
+enum PriceRange {
+  BUDGET // EUR
+  MODERATE // EUR EUR
+  PREMIUM // EUR EUR EUR
+  LUXURY // EUR EUR EUR EUR
+}
+
+// Estados del flujo de reclamacion de perfil (verificacion por email + revision admin).
+enum ClaimStatus {
+  PENDING // solicitada, token enviado o pendiente de revision
+  APPROVED // verificada y aprobada — el usuario pasa a propietario
+  REJECTED // rechazada por el admin o por no superar la verificacion
+  EXPIRED // el token de verificacion caduco sin confirmarse
+}
+
+// Tipos de evento registrados para metricas internas de cada empresa.
+enum MetricEventType {
+  PROFILE_VIEW // visita a la ficha de empresa
+  LISTING_IMPRESSION // aparece en un listado nicho/localidad
+  WEBSITE_CLICK // clic en "visitar web"
+  PHONE_CLICK // clic en telefono
+  EMAIL_CLICK // clic en email
+  CONTACT_CLICK // clic en "contactar"
+}
+
+// Estado de un correo enviado via Resend (para EmailLog).
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+// Estado de indexacion observado para una URL (Search Console / interno).
+enum IndexStatus {
+  UNKNOWN // sin datos todavia
+  DISCOVERED // descubierta, aun no rastreada
+  CRAWLED // rastreada por Google
+  INDEXED // indexada
+  EXCLUDED // excluida (noindex, duplicada, thin content...)
+  ERROR // error al inspeccionar
+}
+
+// ------------------------------------------------------------
+// AUTENTICACION (Auth.js v5)
+// ------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String? // login por email/password
+  role          UserRole  @default(USER)
+  bio           String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  reviews        Review[]
+  reviewVotes    ReviewVote[]
+  favorites      Favorite[]
+  ownedCompanies Company[]      @relation("CompanyOwner")
+  claims         CompanyClaim[]
+  posts          BlogPost[]
+  auditLogs      AuditLog[]
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ------------------------------------------------------------
+// GEOGRAFIA
+// ------------------------------------------------------------
+
+model Province {
+  id                  String   @id @default(cuid())
+  slug                String   @unique // "madrid", "barcelona"
+  name                String // "Madrid"
+  ineCode             String   @unique // codigo INE oficial
+  autonomousCommunity String // "Comunidad de Madrid"
+  latitude            Float?
+  longitude           Float?
+  companyCount        Int      @default(0)
+  metaTitle           String?
+  metaDescription     String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  cities    City[]
+  companies Company[]
+
+  @@index([slug])
+}
+
+model City {
+  id              String   @id @default(cuid())
+  slug            String // "madrid", "alcobendas"
+  name            String
+  ineCode         String?  @unique
+  provinceId      String
+  latitude        Float?
+  longitude       Float?
+  population      Int?
+  companyCount    Int      @default(0)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  province  Province  @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+  companies Company[]
+
+  @@unique([provinceId, slug])
+  @@index([slug])
+  @@index([provinceId])
+}
+
+// ------------------------------------------------------------
+// TAXONOMIA / CATEGORIAS
+// ------------------------------------------------------------
+
+model Category {
+  id              String   @id @default(cuid())
+  slug            String   @unique // "marketing", "abogados"
+  name            String
+  description     String?
+  icon            String? // nombre del icono lucide
+  color           String? // color de acento (hex)
+  parentId        String?
+  order           Int      @default(0)
+  featured        Boolean  @default(false)
+  companyCount    Int      @default(0)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+  companies Company[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([featured])
+}
+
+// ------------------------------------------------------------
+// EMPRESAS
+// ------------------------------------------------------------
+
+model Company {
+  id   String @id @default(cuid())
+  slug String @unique // "agencia-vertigo-madrid"
+
+  // Identidad
+  name                String
+  legalName           String?
+  taxId               String? // CIF/NIF
+  shortDescription    String? // 1 frase, generada por IA
+  description         String? @db.Text // descripcion larga
+  descriptionAI       String? @db.Text // version enriquecida por IA
+  professionalProfile String? @db.Text // perfil profesional generado por IA
+
+  // Clasificacion
+  categoryId String
+  size       CompanySize?
+  priceRange PriceRange?
+  founded    Int? // ano de fundacion
+
+  // Contacto
+  website String?
+  phone   String?
+  email   String?
+
+  // Ubicacion
+  addressLine String?
+  postalCode  String?
+  cityId      String?
+  provinceId  String?
+  latitude    Float?
+  longitude   Float?
+
+  // Multimedia
+  logo       String?
+  coverImage String?
+
+  // Datos de negocio
+  openingHours Json? // { mon: [["09:00","18:00"]], ... }
+  keywords     String[] // keywords SEO
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  // Estado y reputacion
+  status        CompanyStatus @default(DRAFT)
+  verified      Boolean       @default(false)
+  featured      Boolean       @default(false)
+  featuredUntil DateTime?
+  ratingAvg     Float         @default(0)
+  reviewCount   Int           @default(0)
+  viewCount     Int           @default(0)
+
+  // Engagement (contadores agregados — se incrementan con cada MetricEvent)
+  websiteClicks Int @default(0)
+  phoneClicks   Int @default(0)
+  emailClicks   Int @default(0)
+  contactClicks Int @default(0)
+  impressions   Int @default(0)
+
+  // Ranking interno (calculado por calculateBusinessRankingScore)
+  rankingScore    Float     @default(0)
+  completionScore Float     @default(0) // 0-100, completitud del perfil
+  lastRankedAt    DateTime?
+
+  // Procedencia (ingesta legal)
+  source    DataSource @default(MANUAL)
+  sourceId  String? // id en la fuente externa (place_id, osm id...)
+  sourceUrl String?
+
+  // Propiedad
+  ownerId String?
+
+  // Trazabilidad IA / scraping
+  lastEnrichedAt  DateTime?
+  lastRefreshedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category         Category          @relation(fields: [categoryId], references: [id])
+  city             City?             @relation(fields: [cityId], references: [id])
+  province         Province?         @relation(fields: [provinceId], references: [id])
+  owner            User?             @relation("CompanyOwner", fields: [ownerId], references: [id])
+  images           CompanyImage[]
+  services         Service[]
+  socials          SocialLink[]
+  faqs             Faq[]
+  reviews          Review[]
+  favorites        Favorite[]
+  leads            Lead[]
+  claims           CompanyClaim[]
+  subscription     Subscription?
+  projects         Project[]
+  metricEvents     MetricEvent[]
+  rankingSnapshots RankingSnapshot[]
+
+  @@index([categoryId])
+  @@index([cityId])
+  @@index([provinceId])
+  @@index([status])
+  @@index([status, featured])
+  @@index([ratingAvg])
+  @@index([rankingScore])
+  @@index([status, categoryId, cityId])
+  @@index([source, sourceId])
+}
+
+model CompanyImage {
+  id        String   @id @default(cuid())
+  companyId String
+  url       String
+  alt       String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  order       Int     @default(0)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model SocialLink {
+  id        String         @id @default(cuid())
+  companyId String
+  platform  SocialPlatform
+  url       String
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, platform])
+}
+
+model Faq {
+  id            String  @id @default(cuid())
+  companyId     String
+  question      String
+  answer        String  @db.Text
+  generatedByAI Boolean @default(true)
+  order         Int     @default(0)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+// ------------------------------------------------------------
+// RESENAS
+// ------------------------------------------------------------
+
+model Review {
+  id           String       @id @default(cuid())
+  companyId    String
+  authorId     String
+  rating       Int // 1-5
+  title        String?
+  body         String       @db.Text
+  status       ReviewStatus @default(PENDING)
+  aiSpamScore  Float? // 0-1, generado por IA
+  helpfulCount Int          @default(0)
+  reply        String?      @db.Text // respuesta de la empresa
+  repliedAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author  User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  votes   ReviewVote[]
+
+  @@index([companyId])
+  @@index([authorId])
+  @@index([status])
+}
+
+model ReviewVote {
+  id       String @id @default(cuid())
+  reviewId String
+  userId   String
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  companyId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([userId])
+}
+
+// ------------------------------------------------------------
+// RECLAMACION DE PERFILES
+// ------------------------------------------------------------
+
+model CompanyClaim {
+  id        String      @id @default(cuid())
+  companyId String
+  userId    String
+  status    ClaimStatus @default(PENDING)
+
+  // Email corporativo aportado por el solicitante para verificar la pertenencia.
+  claimantEmail String
+  // El dominio del email coincide con el de la web de la empresa -> auto-aprobable.
+  domainMatch   Boolean @default(false)
+  evidence      String? @db.Text // justificacion adicional / documento
+
+  // Verificacion por enlace seguro con token temporal (enviado via Resend).
+  token          String    @unique
+  tokenExpiresAt DateTime
+  verifiedAt     DateTime? // momento en que el usuario confirmo el email
+
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime? // aprobada/rechazada por el sistema o el admin
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([status])
+  @@index([token])
+}
+
+// ------------------------------------------------------------
+// MONETIZACION
+// ------------------------------------------------------------
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  companyId            String             @unique
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  companyId String
+  name      String
+  email     String
+  phone     String?
+  message   String     @db.Text
+  status    LeadStatus @default(NEW)
+  createdAt DateTime   @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// CONTENIDO / BLOG SEO
+// ------------------------------------------------------------
+
+model BlogPost {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  title           String
+  excerpt         String?
+  content         String     @db.Text
+  coverImage      String?
+  status          PostStatus @default(DRAFT)
+  generatedByAI   Boolean    @default(false)
+  authorId        String?
+  metaTitle       String?
+  metaDescription String?
+  keywords        String[]
+  publishedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([status])
+  @@index([slug])
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  confirmed    Boolean  @default(false)
+  confirmToken String?  @unique
+  createdAt    DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// OPERACIONES: INGESTA, IA Y AUDITORIA
+// ------------------------------------------------------------
+
+model IngestionJob {
+  id         String     @id @default(cuid())
+  type       JobType
+  status     JobStatus  @default(QUEUED)
+  source     DataSource @default(GOOGLE_PLACES)
+  query      String? // termino de busqueda / region
+  params     Json? // parametros adicionales
+  stats      Json? // { found, created, updated, skipped, errors }
+  error      String?    @db.Text
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([status])
+  @@index([type, status])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String // "company.approve", "review.reject"...
+  entity    String // "Company", "Review"...
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+}
+
+// ------------------------------------------------------------
+// PORTAFOLIO / PROYECTOS
+// ------------------------------------------------------------
+
+// Proyecto/caso de exito publicado por una empresa reclamada.
+// Influye en el ranking (project_count) y enriquece el perfil para SEO.
+model Project {
+  id          String    @id @default(cuid())
+  companyId   String
+  title       String
+  slug        String
+  description String?   @db.Text
+  coverImage  String?
+  images      String[] // urls adicionales
+  client      String?
+  result      String?   @db.Text // resultado/impacto (opcional)
+  url         String? // enlace al caso publicado (opcional)
+  date        DateTime? // fecha del proyecto
+  categoryId  String? // nicho relacionado
+  cityId      String? // localidad relacionada
+  published   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, slug])
+  @@index([companyId])
+  @@index([categoryId])
+  @@index([cityId])
+}
+
+// ------------------------------------------------------------
+// METRICAS INTERNAS (eventos)
+// ------------------------------------------------------------
+
+// Evento de interaccion con una empresa. Se agrega en contadores
+// (Company.viewCount, websiteClicks...) y alimenta el algoritmo de ranking.
+model MetricEvent {
+  id        String          @id @default(cuid())
+  companyId String
+  type      MetricEventType
+  userId    String? // si el visitante esta autenticado
+  source    String? // ruta de origen ("/marketing/madrid")
+  userAgent String? // opcional
+  ipHash    String? // IP anonimizada (hash), nunca la IP en claro
+  createdAt DateTime        @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, type])
+  @@index([companyId, createdAt])
+  @@index([type, createdAt])
+}
+
+// Instantanea del ranking de una empresa en un momento dado (auditoria/evolucion).
+model RankingSnapshot {
+  id         String   @id @default(cuid())
+  companyId  String
+  score      Float
+  rating     Float
+  reviews    Int
+  projects   Int
+  completion Float
+  engagement Float
+  freshness  Float
+  penalty    Float
+  createdAt  DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
+
+// ------------------------------------------------------------
+// SEO: PAGINAS PROGRAMATICAS E INDEXACION
+// ------------------------------------------------------------
+
+// Registro de cada pagina programatica generada (nicho/localidad, perfil...).
+// Permite controlar el umbral de contenido (noindex hasta tener N empresas)
+// y guardar el estado de indexacion observado.
+model SeoPage {
+  id            String      @id @default(cuid())
+  path          String      @unique // "/marketing/madrid"
+  kind          String // "category_city" | "category" | "city" | "province" | "company"
+  title         String
+  description   String?
+  categoryId    String?
+  cityId        String?
+  provinceId    String?
+  companyId     String?
+  itemCount     Int         @default(0) // empresas listadas
+  indexable     Boolean     @default(false) // true cuando supera el umbral
+  indexStatus   IndexStatus @default(UNKNOWN)
+  lastInspected DateTime?
+  lastSubmitted DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([kind])
+  @@index([indexable])
+  @@index([indexStatus])
+}
+
+// Registro de cada (re)generacion / envio de sitemap.
+model SitemapLog {
+  id           String   @id @default(cuid())
+  sitemapUrl   String
+  urlCount     Int      @default(0)
+  submitted    Boolean  @default(false) // enviado a Search Console
+  pingedGoogle Boolean  @default(false) // ping clasico al endpoint de sitemaps
+  status       String? // respuesta / estado
+  error        String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Registro de llamadas a la Search Console API (inspeccion, envio de sitemap).
+model SearchConsoleLog {
+  id        String      @id @default(cuid())
+  action    String // "submitSitemap" | "inspectUrl" | "verifySite"
+  targetUrl String?
+  status    IndexStatus @default(UNKNOWN)
+  response  Json? // respuesta cruda relevante
+  error     String?     @db.Text
+  createdAt DateTime    @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Registro de todos los correos enviados via Resend (claims, leads, newsletter...).
+model EmailLog {
+  id         String      @id @default(cuid())
+  to         String
+  subject    String
+  template   String // "claim-verification" | "claim-approved" | ...
+  status     EmailStatus @default(QUEUED)
+  providerId String? // id devuelto por Resend
+  error      String?     @db.Text
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([to])
+  @@index([template])
+  @@index([status])
+}
