@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { LayoutDashboard, LogOut, Menu, Search, Shield, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Search,
+  Shield,
+  Star,
+  X,
+} from "lucide-react";
 
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -27,9 +35,33 @@ export function SiteHeader() {
   const user = session?.user ?? null;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [hasFeatured, setHasFeatured] = useState(false);
 
   const firstName = user?.name?.split(" ")[0] ?? "Cuenta";
   const initial = (user?.name?.[0] ?? "U").toUpperCase();
+
+  // Si el usuario tiene una empresa destacada ocultamos el CTA "Destaca tu
+  // empresa". Para los visitantes anonimos el CTA siempre se muestra.
+  useEffect(() => {
+    if (!user) {
+      setHasFeatured(false);
+      return;
+    }
+    let active = true;
+    fetch("/api/me/featured")
+      .then((res) => (res.ok ? res.json() : { hasFeatured: false }))
+      .then((data: { hasFeatured?: boolean }) => {
+        if (active) setHasFeatured(Boolean(data.hasFeatured));
+      })
+      .catch(() => {
+        if (active) setHasFeatured(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.email]);
+
+  const showDestacar = !user || !hasFeatured;
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +104,20 @@ export function SiteHeader() {
           </form>
 
           <ThemeToggle />
+
+          {showDestacar && (
+            <Button
+              asChild
+              variant="brand"
+              size="sm"
+              className="ring-primary/40 hidden shadow-sm ring-1 sm:inline-flex"
+            >
+              <Link href="/destacar">
+                <Star className="size-4" />
+                Destaca tu empresa
+              </Link>
+            </Button>
+          )}
 
           {user ? (
             <DropdownMenu>
@@ -123,9 +169,9 @@ export function SiteHeader() {
               </Button>
               <Button
                 asChild
-                variant="brand"
+                variant="outline"
                 size="sm"
-                className="hidden sm:inline-flex"
+                className="hidden lg:inline-flex"
               >
                 <Link href="/registro">Publicar empresa</Link>
               </Button>
@@ -161,13 +207,31 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          {showDestacar && (
+            <Button
+              asChild
+              variant="brand"
+              size="sm"
+              className="mt-2 w-full"
+              onClick={() => setOpen(false)}
+            >
+              <Link href="/destacar">
+                <Star className="size-4" />
+                Destaca tu empresa
+              </Link>
+            </Button>
+          )}
           {!user && (
             <div className="flex gap-2 pt-2">
               <Button asChild variant="outline" size="sm" className="flex-1">
-                <Link href="/login">Acceder</Link>
+                <Link href="/login" onClick={() => setOpen(false)}>
+                  Acceder
+                </Link>
               </Button>
-              <Button asChild variant="brand" size="sm" className="flex-1">
-                <Link href="/registro">Publicar empresa</Link>
+              <Button asChild variant="outline" size="sm" className="flex-1">
+                <Link href="/registro" onClick={() => setOpen(false)}>
+                  Publicar empresa
+                </Link>
               </Button>
             </div>
           )}

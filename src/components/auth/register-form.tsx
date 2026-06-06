@@ -14,7 +14,7 @@ import {
 
 const INITIAL: AuthState = {};
 
-export function RegisterForm() {
+export function RegisterForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, action, pending] = useActionState(registerUser, INITIAL);
 
   return (
@@ -30,6 +30,9 @@ export function RegisterForm() {
       </p>
 
       <form action={signInWithGoogle} className="mt-6">
+        {callbackUrl && (
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+        )}
         <Button type="submit" variant="outline" className="w-full">
           Continuar con Google
         </Button>
@@ -42,6 +45,9 @@ export function RegisterForm() {
       </div>
 
       <form action={action} className="space-y-3">
+        {callbackUrl && (
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+        )}
         <Input
           name="name"
           type="text"
@@ -79,7 +85,14 @@ export function RegisterForm() {
 
       <p className="text-muted-foreground mt-5 text-center text-sm">
         Ya tienes cuenta?{" "}
-        <Link href="/login" className="text-foreground font-medium">
+        <Link
+          href={
+            callbackUrl
+              ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+              : "/login"
+          }
+          className="text-foreground font-medium"
+        >
           Inicia sesion
         </Link>
       </p>

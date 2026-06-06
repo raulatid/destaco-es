@@ -354,6 +354,7 @@ export function demoCompanyDetail(slug: string): CompanyDetail | null {
     email: `hola@${c.slug}.es`,
     website: `https://www.${c.slug}.es`,
     priceRange: c.priceRange,
+    priceFrom: 100 + (hash(c.slug) % 20) * 50,
     founded: 2005 + (hash(c.slug) % 18),
     size: (["SOLO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"] as const)[
       hash(c.slug) % 5

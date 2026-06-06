@@ -10,10 +10,15 @@ export const metadata: Metadata = buildMetadata({
   noindex: true,
 });
 
-export default function RegistroPage() {
+export default async function RegistroPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
   return (
     <div className="mx-auto flex min-h-[78vh] max-w-md flex-col justify-center px-4 py-12">
-      <RegisterForm />
+      <RegisterForm callbackUrl={callbackUrl} />
     </div>
   );
 }

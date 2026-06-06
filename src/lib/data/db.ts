@@ -10,14 +10,36 @@ const DB_CONFIGURED = Boolean(process.env.DATABASE_URL);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Errores tipicos de "blip" de conexion en entorno serverless (Vercel) contra
+ * Supabase: cold start del pooler, pool agotado, conexion cerrada por el
+ * servidor o timeout puntual. Son transitorios y merecen reintento; el resto
+ * (errores de validacion, de esquema, etc.) se propaga sin reintentar.
+ */
+function isTransientDbError(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientInitializationError) return true;
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // P2024 pool timeout · P1001 no alcanzable · P1002 timeout ·
+    // P1008 operacion agotada · P1017 el servidor cerro la conexion.
+    return ["P2024", "P1001", "P1002", "P1008", "P1017"].includes(error.code);
+  }
+  // El driver envuelve a veces cierres de conexion como Unknown.
+  if (error instanceof Prisma.PrismaClientUnknownRequestError) return true;
+  return false;
+}
+
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [250, 750];
+
+/**
  * Ejecuta una consulta a la base de datos.
  *
  * - Sin `DATABASE_URL` (prototipo): devuelve el catalogo demo.
  * - Con BD configurada: ejecuta la consulta real. Si falla por un error de
- *   conexion (p. ej. Supabase despertando de la pausa del plan free) reintenta
- *   una vez. NUNCA cae a datos demo, porque mostrar empresas inventadas en
+ *   conexion transitorio (Supabase despertando, pool agotado, conexion cerrada
+ *   en un cold start) reintenta hasta {@link MAX_ATTEMPTS} veces con espera
+ *   creciente. NUNCA cae a datos demo, porque mostrar empresas inventadas en
  *   produccion confunde al usuario y ademas genera 404 al abrir sus fichas
- *   (sus slugs no existen en la BD). Cualquier error real se propaga.
+ *   (sus slugs no existen en la BD). Si todos los intentos fallan, se propaga.
  */
 export async function withFallback<T>(
   run: () => Promise<T>,
@@ -27,19 +49,15 @@ export async function withFallback<T>(
     return fallback();
   }
 
-  try {
-    return await run();
-  } catch (error) {
-    // Posible cold start de Supabase (free tier) o timeout puntual del pool:
-    // un unico reintento tras una breve espera antes de propagar el error.
-    if (
-      error instanceof Prisma.PrismaClientInitializationError ||
-      (error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2024")
-    ) {
-      await sleep(500);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
       return await run();
+    } catch (error) {
+      lastError = error;
+      if (!isTransientDbError(error) || attempt === MAX_ATTEMPTS - 1) break;
+      await sleep(BACKOFF_MS[attempt] ?? 750);
     }
-    throw error;
   }
+  throw lastError;
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { FeaturedScope } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { SITE } from "@/lib/constants";
@@ -8,6 +9,16 @@ import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 
 export type BillingState = { error?: string };
+
+const SCOPES: FeaturedScope[] = ["LOCAL", "PROVINCIAL", "NACIONAL"];
+
+/** Normaliza el alcance recibido del formulario (por defecto, nacional). */
+function parseScope(raw: FormDataEntryValue | null): FeaturedScope {
+  const value = typeof raw === "string" ? raw.toUpperCase() : "";
+  return (SCOPES as string[]).includes(value)
+    ? (value as FeaturedScope)
+    : "NACIONAL";
+}
 
 /** Comprueba que el usuario es propietario de la empresa y trae su suscripcion. */
 async function getOwnedCompany(companyId: string, userId: string) {
@@ -31,7 +42,7 @@ async function getOwnedCompany(companyId: string, userId: string) {
 export async function startCheckout(
   companyId: string,
   _prev: BillingState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<BillingState> {
   const session = await auth();
   if (!session?.user) return { error: "Inicia sesion para destacar tu empresa." };
@@ -39,9 +50,22 @@ export async function startCheckout(
   const company = await getOwnedCompany(companyId, session.user.id);
   if (!company) return { error: "No tienes permisos sobre esta empresa." };
 
+  const scope = parseScope(formData.get("scope"));
+
   const priceId = process.env.STRIPE_PRICE_ID;
   if (!priceId) return { error: "La pasarela de pago no esta configurada todavia." };
   const taxRateId = process.env.STRIPE_TAX_RATE_ID;
+
+  // Guardamos el alcance elegido (la empresa se marca como destacada cuando el
+  // webhook de Stripe confirme el pago).
+  try {
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { featuredScope: scope },
+    });
+  } catch (error) {
+    console.error("[billing] no se pudo guardar el alcance:", error);
+  }
 
   const baseUrl = SITE.url;
   const successUrl = `${baseUrl}/dashboard/empresas/${companyId}/destacar?estado=ok`;
@@ -75,8 +99,8 @@ export async function startCheckout(
       tax_id_collection: { enabled: true },
       allow_promotion_codes: true,
       client_reference_id: companyId,
-      metadata: { companyId },
-      subscription_data: { metadata: { companyId } },
+      metadata: { companyId, featuredScope: scope },
+      subscription_data: { metadata: { companyId, featuredScope: scope } },
       success_url: successUrl,
       cancel_url: cancelUrl,
     });

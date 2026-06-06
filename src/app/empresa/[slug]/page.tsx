@@ -208,6 +208,11 @@ export default async function CompanyPage({ params }: PageProps) {
                     {PRICE_LABEL[company.priceRange]}
                   </span>
                 )}
+                {company.priceFrom != null && (
+                  <span className="font-medium">
+                    Desde {company.priceFrom} €
+                  </span>
+                )}
                 {company.founded && (
                   <span className="flex items-center gap-1.5">
                     <Calendar className="size-4" />

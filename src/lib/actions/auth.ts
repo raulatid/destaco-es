@@ -9,6 +9,16 @@ import { hashPassword } from "@/lib/password";
 
 export type AuthState = { error?: string };
 
+/**
+ * Devuelve un destino seguro para `redirectTo`: solo rutas internas relativas.
+ * Evita open-redirects a dominios externos (`//evil.com`, `https://...`).
+ */
+function safeCallbackUrl(raw: FormDataEntryValue | null | undefined): string {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  return "/dashboard";
+}
+
 const RegisterSchema = z.object({
   name: z.string().min(2, "El nombre es demasiado corto."),
   email: z.string().email("El email no es valido."),
@@ -23,9 +33,10 @@ export async function loginUser(
 ): Promise<AuthState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  const redirectTo = safeCallbackUrl(formData.get("callbackUrl"));
 
   try {
-    await signIn("credentials", { email, password, redirectTo: "/" });
+    await signIn("credentials", { email, password, redirectTo });
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Email o contrasena incorrectos." };
@@ -49,6 +60,7 @@ export async function registerUser(
   }
 
   const { name, email, password } = parsed.data;
+  const redirectTo = safeCallbackUrl(formData.get("callbackUrl"));
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -60,7 +72,7 @@ export async function registerUser(
   });
 
   try {
-    await signIn("credentials", { email, password, redirectTo: "/" });
+    await signIn("credentials", { email, password, redirectTo });
   } catch (error) {
     if (error instanceof AuthError) {
       return { error: "Cuenta creada. Inicia sesion para continuar." };
@@ -70,8 +82,10 @@ export async function registerUser(
   return {};
 }
 
-export async function signInWithGoogle() {
-  await signIn("google", { redirectTo: "/" });
+export async function signInWithGoogle(formData: FormData) {
+  await signIn("google", {
+    redirectTo: safeCallbackUrl(formData.get("callbackUrl")),
+  });
 }
 
 export async function logout() {

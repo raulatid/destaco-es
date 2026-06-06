@@ -44,15 +44,15 @@ const PLANS = [
     description: "Aparece por encima del resto y consigue mas clientes.",
     features: [
       "Todo lo incluido en el plan Gratis",
-      "Posicion destacada en tu categoria, a nivel nacional",
-      "Destacado tambien en tu ciudad y localidad",
+      "Posicion destacada en tu categoria, a nivel nacional, provincial o local",
+      "Tu eliges donde destacar: toda España, tu provincia o tu ciudad",
       "Insignia «Destacado» en tu perfil y en los listados",
       "Mas visibilidad, mas visitas y mas leads",
       "Estadisticas avanzadas de rendimiento",
       "Soporte prioritario",
     ],
     cta: "Destacar mi empresa",
-    href: "/dashboard/empresas",
+    href: "/destacar",
     featured: true,
   },
 ] as const;

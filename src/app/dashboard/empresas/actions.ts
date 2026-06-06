@@ -45,7 +45,28 @@ const CompanySchema = z.object({
     (v) => (v === "" || v == null ? undefined : v),
     z.enum(["SOLO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"]).optional(),
   ),
+  priceFrom: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : Number(v)),
+    z
+      .number()
+      .int()
+      .min(0, "El precio no puede ser negativo.")
+      .max(10_000_000, "El precio no es valido.")
+      .optional(),
+  ),
+  services: z.string().max(4000).optional(),
 });
+
+/** Convierte el textarea de servicios (uno por linea) en filas Service. */
+function parseServices(raw: string | undefined) {
+  if (!raw) return [];
+  return raw
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 50)
+    .map((name, order) => ({ name: name.slice(0, 120), order }));
+}
 
 async function uniqueSlug(name: string, city?: string): Promise<string> {
   const base = slugify(city ? `${name}-${city}` : name) || "empresa";
@@ -148,11 +169,13 @@ export async function createCompany(
       postalCode: d.postalCode || null,
       founded: d.founded ?? null,
       size: d.size ?? null,
+      priceFrom: d.priceFrom ?? null,
       provinceId,
       cityId,
       ownerId: session.user.id,
       source: "CLAIMED",
       status: "PENDING",
+      services: { create: parseServices(d.services) },
     },
   });
 
@@ -207,8 +230,10 @@ export async function updateCompany(
       postalCode: d.postalCode || null,
       founded: d.founded ?? null,
       size: d.size ?? null,
+      priceFrom: d.priceFrom ?? null,
       provinceId,
       cityId,
+      services: { deleteMany: {}, create: parseServices(d.services) },
     },
   });
 

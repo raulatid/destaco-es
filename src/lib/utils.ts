@@ -1,4 +1,4 @@
-import type { CompanySize } from "@prisma/client";
+import type { CompanySize, FeaturedScope } from "@prisma/client";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -34,6 +34,27 @@ export const COMPANY_SIZE_RANGE: Record<
   MEDIUM: { min: 11, max: 50 },
   LARGE: { min: 51, max: 200 },
   ENTERPRISE: { min: 201 },
+};
+
+/** Orden de los alcances del destacado para el selector. */
+export const FEATURED_SCOPES: FeaturedScope[] = [
+  "LOCAL",
+  "PROVINCIAL",
+  "NACIONAL",
+];
+
+/** Etiqueta corta del alcance del destacado. */
+export const FEATURED_SCOPE_LABEL: Record<FeaturedScope, string> = {
+  LOCAL: "Tu localidad",
+  PROVINCIAL: "Tu provincia",
+  NACIONAL: "Toda España",
+};
+
+/** Descripcion del alcance del destacado (para el selector). */
+export const FEATURED_SCOPE_HINT: Record<FeaturedScope, string> = {
+  LOCAL: "Destaca solo en tu ciudad. Ideal para negocios de barrio.",
+  PROVINCIAL: "Destaca en toda tu provincia.",
+  NACIONAL: "Maxima visibilidad en todo el pais.",
 };
 
 const DIACRITICS = /[̀-ͯ]/g;

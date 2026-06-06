@@ -1,5 +1,6 @@
 import type {
   CompanyStatus,
+  FeaturedScope,
   SubscriptionPlan,
   SubscriptionStatus,
 } from "@prisma/client";
@@ -174,6 +175,9 @@ export interface EditableCompany {
   cityName: string;
   founded: string;
   size: string;
+  priceFrom: string;
+  /** Servicios, uno por linea (para el textarea del formulario). */
+  services: string;
 }
 
 export function getMyCompany(
@@ -188,6 +192,7 @@ export function getMyCompany(
           category: { select: { slug: true } },
           province: { select: { slug: true } },
           city: { select: { name: true } },
+          services: { orderBy: { order: "asc" }, select: { name: true } },
         },
       });
       if (!c) return null;
@@ -206,6 +211,8 @@ export function getMyCompany(
         cityName: c.city?.name ?? "",
         founded: c.founded?.toString() ?? "",
         size: c.size ?? "",
+        priceFrom: c.priceFrom?.toString() ?? "",
+        services: c.services.map((s) => s.name).join("\n"),
       };
     },
     () => null,
@@ -219,12 +226,64 @@ export interface CompanyBilling {
   status: CompanyStatus;
   /** La empresa esta destacada ahora mismo. */
   featured: boolean;
+  /** Alcance elegido para el destacado (localidad/provincia/nacional). */
+  featuredScope: FeaturedScope | null;
   featuredUntil: string | null;
   plan: SubscriptionPlan;
   subStatus: SubscriptionStatus | null;
   currentPeriodEnd: string | null;
   /** Tiene cliente en Stripe => puede abrir el portal de facturacion. */
   hasSubscription: boolean;
+}
+
+const BILLING_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  status: true,
+  featured: true,
+  featuredScope: true,
+  featuredUntil: true,
+  subscription: {
+    select: {
+      plan: true,
+      status: true,
+      currentPeriodEnd: true,
+      stripeCustomerId: true,
+    },
+  },
+} as const;
+
+type BillingRow = {
+  id: string;
+  name: string;
+  slug: string;
+  status: CompanyStatus;
+  featured: boolean;
+  featuredScope: FeaturedScope | null;
+  featuredUntil: Date | null;
+  subscription: {
+    plan: SubscriptionPlan;
+    status: SubscriptionStatus;
+    currentPeriodEnd: Date | null;
+    stripeCustomerId: string | null;
+  } | null;
+};
+
+function toBilling(c: BillingRow): CompanyBilling {
+  return {
+    companyId: c.id,
+    companyName: c.name,
+    companySlug: c.slug,
+    status: c.status,
+    featured: c.featured,
+    featuredScope: c.featuredScope,
+    featuredUntil: c.featuredUntil?.toISOString() ?? null,
+    plan: c.subscription?.plan ?? "FREE",
+    subStatus: c.subscription?.status ?? null,
+    currentPeriodEnd: c.subscription?.currentPeriodEnd?.toISOString() ?? null,
+    hasSubscription: Boolean(c.subscription?.stripeCustomerId),
+  };
 }
 
 export function getCompanyBilling(
@@ -235,37 +294,25 @@ export function getCompanyBilling(
     async () => {
       const c = await prisma.company.findFirst({
         where: { id: companyId, ownerId },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          status: true,
-          featured: true,
-          featuredUntil: true,
-          subscription: {
-            select: {
-              plan: true,
-              status: true,
-              currentPeriodEnd: true,
-              stripeCustomerId: true,
-            },
-          },
-        },
+        select: BILLING_SELECT,
       });
-      if (!c) return null;
-      return {
-        companyId: c.id,
-        companyName: c.name,
-        companySlug: c.slug,
-        status: c.status,
-        featured: c.featured,
-        featuredUntil: c.featuredUntil?.toISOString() ?? null,
-        plan: c.subscription?.plan ?? "FREE",
-        subStatus: c.subscription?.status ?? null,
-        currentPeriodEnd: c.subscription?.currentPeriodEnd?.toISOString() ?? null,
-        hasSubscription: Boolean(c.subscription?.stripeCustomerId),
-      };
+      return c ? toBilling(c) : null;
     },
     () => null,
+  );
+}
+
+/** Facturacion de todas las empresas del usuario (para la seccion Facturacion). */
+export function getMyBilling(ownerId: string): Promise<CompanyBilling[]> {
+  return withFallback<CompanyBilling[]>(
+    async () => {
+      const rows = await prisma.company.findMany({
+        where: { ownerId },
+        select: BILLING_SELECT,
+        orderBy: [{ featured: "desc" }, { updatedAt: "desc" }],
+      });
+      return rows.map(toBilling);
+    },
+    () => [],
   );
 }

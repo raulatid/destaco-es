@@ -132,6 +132,35 @@ export function CompanyForm({
         </Field>
       </div>
 
+      <Field label="Precio desde (€)">
+        <Input
+          name="priceFrom"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={1}
+          defaultValue={initial?.priceFrom}
+          placeholder="Ej. 300"
+        />
+        <span className="text-muted-foreground mt-1 block text-xs">
+          Precio a partir del cual empiezan tus servicios. Se mostrara como
+          «Desde 300 €» en tu ficha.
+        </span>
+      </Field>
+
+      <Field label="Servicios que ofreces">
+        <textarea
+          name="services"
+          rows={5}
+          defaultValue={initial?.services}
+          placeholder={"Un servicio por linea. Por ejemplo:\nDiseño web\nSEO\nCampañas de Google Ads"}
+          className={cn(controlClass, "h-auto py-2.5 leading-relaxed")}
+        />
+        <span className="text-muted-foreground mt-1 block text-xs">
+          Escribe un servicio por linea.
+        </span>
+      </Field>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Web">
           <Input

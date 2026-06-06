@@ -115,6 +115,13 @@ enum PriceRange {
   LUXURY // EUR EUR EUR EUR
 }
 
+// Alcance de la posicion destacada (lo elige el cliente al contratar el plan).
+enum FeaturedScope {
+  LOCAL // su ciudad / localidad
+  PROVINCIAL // su provincia
+  NACIONAL // toda España
+}
+
 // Estados del flujo de reclamacion de perfil (verificacion por email + revision admin).
 enum ClaimStatus {
   PENDING // solicitada, token enviado o pendiente de revision
@@ -315,6 +322,7 @@ model Company {
   categoryId String
   size       CompanySize?
   priceRange PriceRange?
+  priceFrom  Int? // precio desde el que empiezan sus servicios (EUR)
   founded    Int? // ano de fundacion
 
   // Contacto
@@ -343,9 +351,10 @@ model Company {
   metaDescription String?
 
   // Estado y reputacion
-  status        CompanyStatus @default(DRAFT)
-  verified      Boolean       @default(false)
-  featured      Boolean       @default(false)
+  status        CompanyStatus  @default(DRAFT)
+  verified      Boolean        @default(false)
+  featured      Boolean        @default(false)
+  featuredScope FeaturedScope? // alcance del destacado (lo elige al pagar)
   featuredUntil DateTime?
   ratingAvg     Float         @default(0)
   reviewCount   Int           @default(0)
@@ -478,7 +487,8 @@ model Review {
   author  User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
   votes   ReviewVote[]
 
-  @@index([companyId])
+  // Una resena por usuario y empresa (un mismo correo no puede resenar dos veces).
+  @@unique([companyId, authorId])
   @@index([authorId])
   @@index([status])
 }

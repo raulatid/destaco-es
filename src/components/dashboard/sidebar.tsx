@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Building2, LayoutDashboard, LogOut } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  CreditCard,
+  LayoutDashboard,
+  LogOut,
+} from "lucide-react";
 
 import { logout } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils";
@@ -11,6 +17,7 @@ const LINKS = [
   { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/dashboard/empresas", label: "Mis empresas", icon: Building2 },
   { href: "/dashboard/metricas", label: "Metricas", icon: BarChart3 },
+  { href: "/dashboard/facturacion", label: "Facturacion", icon: CreditCard },
 ];
 
 export function DashboardSidebar() {

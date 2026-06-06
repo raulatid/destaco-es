@@ -71,6 +71,7 @@ export interface CompanyDetail {
   email: string | null;
   website: string | null;
   priceRange: number | null;
+  priceFrom: number | null;
   founded: number | null;
   size: CompanySize | null;
   verified: boolean;

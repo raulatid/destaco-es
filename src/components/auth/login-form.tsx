@@ -10,7 +10,7 @@ import { loginUser, signInWithGoogle, type AuthState } from "@/lib/actions/auth"
 
 const INITIAL: AuthState = {};
 
-export function LoginForm() {
+export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   const [state, action, pending] = useActionState(loginUser, INITIAL);
 
   return (
@@ -26,6 +26,9 @@ export function LoginForm() {
       </p>
 
       <form action={signInWithGoogle} className="mt-6">
+        {callbackUrl && (
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+        )}
         <Button type="submit" variant="outline" className="w-full">
           Continuar con Google
         </Button>
@@ -38,6 +41,9 @@ export function LoginForm() {
       </div>
 
       <form action={action} className="space-y-3">
+        {callbackUrl && (
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+        )}
         <Input
           name="email"
           type="email"
@@ -67,7 +73,14 @@ export function LoginForm() {
 
       <p className="text-muted-foreground mt-5 text-center text-sm">
         No tienes cuenta?{" "}
-        <Link href="/registro" className="text-foreground font-medium">
+        <Link
+          href={
+            callbackUrl
+              ? `/registro?callbackUrl=${encodeURIComponent(callbackUrl)}`
+              : "/registro"
+          }
+          className="text-foreground font-medium"
+        >
           Registrate gratis
         </Link>
       </p>

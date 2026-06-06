@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Check, Sparkles } from "lucide-react";
 
 import {
-  CheckoutButton,
+  FeatureCheckout,
   PortalButton,
 } from "@/components/dashboard/billing-buttons";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getCompanyBilling } from "@/lib/data/dashboard";
 import { FEATURED_PRICE } from "@/lib/stripe";
+import { FEATURED_SCOPE_LABEL } from "@/lib/utils";
 
 const BENEFITS = [
-  "Posicion destacada en tu categoria, a nivel nacional",
-  "Destacado tambien en tu ciudad y localidad",
+  "Posicion destacada en tu categoria, a nivel nacional, provincial o local",
+  "Tu eliges donde destacar: toda España, tu provincia o tu ciudad",
   "Insignia «Destacado» en tu perfil y en los listados",
   "Mas visibilidad, mas visitas y mas leads",
   "Estadisticas avanzadas de rendimiento",
@@ -90,6 +91,11 @@ export default async function DestacarPage({
               <Sparkles className="size-3" />
               Destacada
             </Badge>
+            {billing.featuredScope && (
+              <Badge variant="outline">
+                {FEATURED_SCOPE_LABEL[billing.featuredScope]}
+              </Badge>
+            )}
             {renewsOn && (
               <span className="text-muted-foreground text-sm">
                 Se renueva el {renewsOn}
@@ -97,9 +103,12 @@ export default async function DestacarPage({
             )}
           </div>
           <p className="mt-3 text-sm">
-            Tu empresa esta <strong>destacada</strong> en su categoria, ciudad y
-            localidad. Desde el portal puedes actualizar tu metodo de pago,
-            descargar tus facturas o cancelar la renovacion.
+            Tu empresa esta <strong>destacada</strong>
+            {billing.featuredScope
+              ? ` (${FEATURED_SCOPE_LABEL[billing.featuredScope].toLowerCase()})`
+              : ""}
+            . Desde el portal puedes actualizar tu metodo de pago, descargar tus
+            facturas o cancelar la renovacion.
           </p>
           <div className="mt-5">
             <PortalButton companyId={billing.companyId} />
@@ -152,7 +161,10 @@ export default async function DestacarPage({
             {isPastDue && billing.hasSubscription ? (
               <PortalButton companyId={billing.companyId} />
             ) : (
-              <CheckoutButton companyId={billing.companyId} />
+              <FeatureCheckout
+                companyId={billing.companyId}
+                initialScope={billing.featuredScope}
+              />
             )}
           </div>
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, MapPin, Sparkles, Tags } from "lucide-react";
+import { Building2, MapPin, Tags } from "lucide-react";
 
 import { SearchBar } from "@/components/home/search-bar";
 import { getSiteStats } from "@/lib/data/stats";
@@ -33,7 +33,6 @@ export async function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 lg:px-8">
         <span className="border-border bg-card text-muted-foreground mx-auto inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm">
-          <Sparkles className="size-3.5" />
           Actualizado a diario
         </span>
 

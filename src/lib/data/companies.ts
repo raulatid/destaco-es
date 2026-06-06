@@ -274,6 +274,7 @@ function rowToDetail(row: DetailRow): CompanyDetail {
     email: row.email,
     website: cleanWebsiteUrl(row.website),
     priceRange: row.priceRange ? PRICE_RANGE_TO_NUMBER[row.priceRange] : null,
+    priceFrom: row.priceFrom,
     founded: row.founded,
     size: row.size,
     verified: row.verified,
