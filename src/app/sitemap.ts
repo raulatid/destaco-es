@@ -19,8 +19,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const at = (path: string) => `${SITE.url}${path}`;
   const now = new Date();
 
-  let categories: { slug: string }[] = [];
-  let provinces: { slug: string }[] = [];
+  let categories: { slug: string; companyCount: number }[] = [];
+  let provinces: { slug: string; companyCount: number }[] = [];
   let companies: {
     slug: string;
     updatedAt: Date;
@@ -30,8 +30,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     [categories, provinces, companies] = await Promise.all([
-      prisma.category.findMany({ select: { slug: true } }),
-      prisma.province.findMany({ select: { slug: true } }),
+      prisma.category.findMany({ select: { slug: true, companyCount: true } }),
+      prisma.province.findMany({ select: { slug: true, companyCount: true } }),
       prisma.company.findMany({
         where: { status: "PUBLISHED" },
         select: {
@@ -52,22 +52,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: at("/empresas"), lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: at("/provincias"), lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: at("/precios"), lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: at("/blog"), lastModified: now, changeFrequency: "daily", priority: 0.6 },
+    { url: at("/sobre-nosotros"), lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: at("/contacto"), lastModified: now, changeFrequency: "monthly", priority: 0.4 },
   ];
 
-  const categoryRoutes: MetadataRoute.Sitemap = categories.map((c) => ({
-    url: at(`/${c.slug}`),
-    lastModified: now,
-    changeFrequency: "daily",
-    priority: 0.8,
-  }));
+  // Solo categorias/provincias con suficiente contenido: las "thin" se sirven
+  // con noindex, asi que no deben aparecer en el sitemap (evita el aviso
+  // "URL enviada marcada como noindex" en Search Console).
+  const categoryRoutes: MetadataRoute.Sitemap = categories
+    .filter((c) => c.companyCount >= MIN_ITEMS_FOR_INDEX)
+    .map((c) => ({
+      url: at(`/${c.slug}`),
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.8,
+    }));
 
-  const provinceRoutes: MetadataRoute.Sitemap = provinces.map((p) => ({
-    url: at(`/provincias/${p.slug}`),
-    lastModified: now,
-    changeFrequency: "weekly",
-    priority: 0.6,
-  }));
+  const provinceRoutes: MetadataRoute.Sitemap = provinces
+    .filter((p) => p.companyCount >= MIN_ITEMS_FOR_INDEX)
+    .map((p) => ({
+      url: at(`/provincias/${p.slug}`),
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    }));
 
   // Landing pages /[categoria]/[ciudad]: solo las que superan el umbral de
   // contenido (evita incluir "thin content" que luego se sirve con noindex).

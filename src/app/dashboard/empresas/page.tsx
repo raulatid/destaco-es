@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CompanyStatus } from "@prisma/client";
-import { Building2, Plus } from "lucide-react";
+import { Building2, Plus, Sparkles } from "lucide-react";
 
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,12 @@ export default async function MisEmpresasPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium">{company.name}</p>
                     <Badge variant={meta.variant}>{meta.label}</Badge>
+                    {company.featured && (
+                      <Badge variant="success">
+                        <Sparkles className="size-3" />
+                        Destacada
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-muted-foreground mt-0.5 text-sm">
                     {company.category}
@@ -79,8 +85,23 @@ export default async function MisEmpresasPage() {
                     </Button>
                   )}
                   <Button asChild size="sm" variant="outline">
+                    <Link href={`/dashboard/empresas/${company.id}/proyectos`}>
+                      Portfolio
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
                     <Link href={`/dashboard/empresas/${company.id}/editar`}>
                       Editar
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="sm"
+                    variant={company.featured ? "ghost" : "brand"}
+                  >
+                    <Link href={`/dashboard/empresas/${company.id}/destacar`}>
+                      <Sparkles className="size-4" />
+                      {company.featured ? "Gestionar" : "Destacar"}
                     </Link>
                   </Button>
                 </div>

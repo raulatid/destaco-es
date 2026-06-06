@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Building2 } from "lucide-react";
 
 import { CompanyGrid } from "@/components/company-grid";
+import { FaqSection } from "@/components/faq-section";
 import { JsonLd } from "@/components/json-ld";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
@@ -11,7 +12,7 @@ import { SortControl } from "@/components/sort-control";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { listCompanies } from "@/lib/data/companies";
 import { getCityBySlug } from "@/lib/data/locations";
-import { TOP_CITIES } from "@/lib/constants";
+import { bestNoun, categoryNoun, nounIsFeminine, TOP_CITIES } from "@/lib/constants";
 import { isSortOption } from "@/lib/ranking";
 import {
   breadcrumbJsonLd,
@@ -49,9 +50,11 @@ export async function generateMetadata({
     page: 1,
   });
 
+  const noun = categoryNoun(categoria, category.name);
+
   return buildMetadata({
-    title: landingTitle(category.name, city.name),
-    description: landingDescription(category.name, city.name, result.total),
+    title: landingTitle(noun, city.name),
+    description: landingDescription(noun, city.name, result.total),
     path: `/${categoria}/${ciudad}`,
     // Evita "thin content": paginas con pocas empresas no se indexan.
     noindex: result.total < MIN_ITEMS_FOR_INDEX,
@@ -79,12 +82,9 @@ export default async function CategoryCityPage({
     sort,
   });
 
-  const faqs = landingFaqs(
-    category.name,
-    city.name,
-    result.total,
-    result.items[0]?.name,
-  );
+  const noun = categoryNoun(categoria, category.name);
+  const g = nounIsFeminine(noun) ? "a" : "o";
+  const faqs = landingFaqs(noun, city.name, result.total, result.items[0]?.name);
 
   return (
     <>
@@ -102,7 +102,7 @@ export default async function CategoryCityPage({
             name: c.name,
             path: `/empresa/${c.slug}`,
           })),
-          landingTitle(category.name, city.name),
+          landingTitle(noun, city.name),
         )}
       />
       <JsonLd data={faqJsonLd(faqs)} />
@@ -114,8 +114,8 @@ export default async function CategoryCityPage({
           { name: category.name, href: `/${categoria}` },
           { name: city.name },
         ]}
-        title={landingTitle(category.name, city.name)}
-        description={`Las mejores empresas de ${category.name.toLowerCase()} en ${city.name}, provincia de ${city.province}. Verificadas y valoradas por clientes reales.`}
+        title={landingTitle(noun, city.name)}
+        description={`${bestNoun(noun)} en ${city.name}, provincia de ${city.province}. Verificad${g}s y valorad${g}s por clientes reales.`}
         meta={
           <span className="flex items-center gap-1.5">
             <Building2 className="size-4" />
@@ -132,7 +132,7 @@ export default async function CategoryCityPage({
         )}
         <CompanyGrid
           companies={result.items}
-          emptyTitle={`Aun no hay ${category.name.toLowerCase()} en ${city.name}`}
+          emptyTitle={`Aun no hay ${noun} en ${city.name}`}
           emptyDescription="Estamos ampliando el directorio cada dia. Vuelve pronto o prueba en otra ciudad."
         />
         <Pagination
@@ -149,33 +149,15 @@ export default async function CategoryCityPage({
           }}
         />
 
-        {faqs.length > 0 && (
-          <section className="mt-16 max-w-3xl">
-            <h2 className="text-xl font-semibold tracking-tight">
-              Preguntas frecuentes sobre {category.name.toLowerCase()} en{" "}
-              {city.name}
-            </h2>
-            <div className="mt-5 space-y-2">
-              {faqs.map((faq) => (
-                <details
-                  key={faq.question}
-                  className="group bg-card rounded-xl border p-4"
-                >
-                  <summary className="cursor-pointer list-none font-medium">
-                    {faq.question}
-                  </summary>
-                  <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </details>
-              ))}
-            </div>
-          </section>
-        )}
+        <FaqSection
+          faqs={faqs}
+          title={`Preguntas frecuentes sobre ${noun} en ${city.name}`}
+          className="mt-16"
+        />
 
         <section className="mt-16">
           <h2 className="text-xl font-semibold tracking-tight">
-            {category.name} en otras ciudades
+            {bestNoun(noun)} en otras ciudades
           </h2>
           <div className="mt-5 flex flex-wrap gap-2">
             {TOP_CITIES.filter((c) => c.slug !== ciudad).map((c) => (
@@ -184,7 +166,7 @@ export default async function CategoryCityPage({
                 href={`/${categoria}/${c.slug}`}
                 className="border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground rounded-full border px-3.5 py-1.5 text-sm transition-colors"
               >
-                {category.name.split(" ")[0]} en {c.name}
+                {noun} en {c.name}
               </Link>
             ))}
           </div>

@@ -8,7 +8,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 
-import { FEATURED_CATEGORIES } from "../src/lib/constants";
+import { CATEGORIES } from "../src/lib/constants";
 import { hashPassword } from "../src/lib/password";
 
 const prisma = new PrismaClient();
@@ -136,24 +136,32 @@ async function main() {
   }
   console.log(`  ${CITIES.length} ciudades`);
 
-  // 3. Categorias
-  for (const [i, cat] of FEATURED_CATEGORIES.entries()) {
+  // 3. Categorias (catalogo maestro: destacadas + nichos segmentados)
+  for (const [i, cat] of CATEGORIES.entries()) {
     await prisma.category.upsert({
       where: { slug: cat.slug },
-      update: { name: cat.name, icon: cat.icon },
+      update: {
+        name: cat.name,
+        icon: cat.icon,
+        description: cat.description,
+        order: i,
+        featured: cat.featured,
+        metaTitle: `Los mejores ${cat.noun} en España`,
+        metaDescription: `Directorio de los mejores ${cat.noun} en España. ${cat.description}`,
+      },
       create: {
         slug: cat.slug,
         name: cat.name,
         description: cat.description,
         icon: cat.icon,
         order: i,
-        featured: true,
-        metaTitle: `${cat.name} en Espana | Destaco.es`,
-        metaDescription: `Directorio de ${cat.name.toLowerCase()}. ${cat.description}`,
+        featured: cat.featured,
+        metaTitle: `Los mejores ${cat.noun} en España`,
+        metaDescription: `Directorio de los mejores ${cat.noun} en España. ${cat.description}`,
       },
     });
   }
-  console.log(`  ${FEATURED_CATEGORIES.length} categorias`);
+  console.log(`  ${CATEGORIES.length} categorias`);
 
   // 4. Recuento por categoria
   for (const cat of await prisma.category.findMany()) {

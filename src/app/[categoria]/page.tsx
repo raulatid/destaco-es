@@ -4,15 +4,30 @@ import { notFound } from "next/navigation";
 import { Building2, MapPin } from "lucide-react";
 
 import { CompanyGrid } from "@/components/company-grid";
+import { FaqSection } from "@/components/faq-section";
 import { JsonLd } from "@/components/json-ld";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { SortControl } from "@/components/sort-control";
+import { CategoryIcon } from "@/components/category-icon";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { listCompanies } from "@/lib/data/companies";
-import { TOP_CITIES } from "@/lib/constants";
+import {
+  bestNoun,
+  categoryNoun,
+  childCategories,
+  nounIsFeminine,
+  TOP_CITIES,
+} from "@/lib/constants";
 import { isSortOption } from "@/lib/ranking";
-import { breadcrumbJsonLd, buildMetadata, itemListJsonLd } from "@/lib/seo";
+import {
+  breadcrumbJsonLd,
+  buildMetadata,
+  categoryFaqs,
+  faqJsonLd,
+  itemListJsonLd,
+} from "@/lib/seo";
+import { MIN_ITEMS_FOR_INDEX } from "@/lib/seo/seo-pages";
 import { formatCompact } from "@/lib/utils";
 
 export const revalidate = 3600;
@@ -28,14 +43,16 @@ export async function generateMetadata({
   const { categoria } = await params;
   const category = await getCategoryBySlug(categoria);
   if (!category) return {};
+  const noun = categoryNoun(categoria, category.name);
   return buildMetadata({
-    title:
-      category.metaTitle ?? `Empresas de ${category.name} en Espana`,
+    title: category.metaTitle ?? `${bestNoun(noun)} en España`,
     description:
       category.metaDescription ??
       category.description ??
-      `Directorio de empresas de ${category.name} en Espana. Compara valoraciones, servicios y precios.`,
+      `Directorio de ${bestNoun(noun, true)} en España. Compara valoraciones, servicios y precios y contacta gratis.`,
     path: `/${categoria}`,
+    // Evita "thin content": categorias casi vacias no se indexan.
+    noindex: (category.companyCount ?? 0) < MIN_ITEMS_FOR_INDEX,
   });
 }
 
@@ -48,9 +65,13 @@ export default async function CategoryPage({
   const category = await getCategoryBySlug(categoria);
   if (!category) notFound();
 
+  const noun = categoryNoun(categoria, category.name);
+  const g = nounIsFeminine(noun) ? "a" : "o";
   const page = Math.max(1, Number(pageParam) || 1);
   const sort = isSortOption(sortParam) ? sortParam : "score";
   const result = await listCompanies({ categorySlug: categoria, page, sort });
+  const subcategories = childCategories(categoria);
+  const faqs = categoryFaqs(noun, result.total);
 
   return (
     <>
@@ -67,9 +88,10 @@ export default async function CategoryPage({
             name: c.name,
             path: `/empresa/${c.slug}`,
           })),
-          `Empresas de ${category.name}`,
+          `${bestNoun(noun)} en España`,
         )}
       />
+      <JsonLd data={faqJsonLd(faqs)} />
 
       <PageHeader
         crumbs={[
@@ -77,10 +99,10 @@ export default async function CategoryPage({
           { name: "Categorias", href: "/categorias" },
           { name: category.name },
         ]}
-        title={`Empresas de ${category.name} en Espana`}
+        title={`${bestNoun(noun)} en España`}
         description={
           category.description ??
-          `Las mejores empresas de ${category.name.toLowerCase()}, verificadas y valoradas.`
+          `${bestNoun(noun)} de España, verificad${g}s y valorad${g}s por clientes reales.`
         }
         meta={
           <span className="flex items-center gap-1.5">
@@ -91,6 +113,31 @@ export default async function CategoryPage({
       />
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {subcategories.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Especialidades de {noun}
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Filtra por especialidad y encuentra justo lo que buscas.
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {subcategories.map((sub) => (
+                <Link
+                  key={sub.slug}
+                  href={`/${sub.slug}`}
+                  className="group bg-card hover:border-foreground/20 flex items-center gap-3 rounded-xl border p-4 transition-all duration-300 hover:shadow-md"
+                >
+                  <div className="bg-muted text-muted-foreground group-hover:text-foreground grid size-9 shrink-0 place-items-center rounded-lg border transition-colors">
+                    <CategoryIcon name={sub.icon} className="size-4" />
+                  </div>
+                  <span className="text-sm font-medium">{sub.name}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {result.items.length > 0 && (
           <div className="mb-6 flex justify-end">
             <SortControl value={sort} />
@@ -98,7 +145,7 @@ export default async function CategoryPage({
         )}
         <CompanyGrid
           companies={result.items}
-          emptyTitle={`Aun no hay empresas de ${category.name.toLowerCase()}`}
+          emptyTitle={`Aun no hay ${noun} en el directorio`}
           emptyDescription="Estamos ampliando el directorio. Conecta la base de datos y ejecuta la ingesta para llenar esta categoria."
         />
         <Pagination
@@ -113,13 +160,18 @@ export default async function CategoryPage({
           }}
         />
 
+        <FaqSection
+          faqs={faqs}
+          title={`Preguntas frecuentes sobre ${noun}`}
+          className="mt-16"
+        />
+
         <section className="mt-16">
           <h2 className="text-xl font-semibold tracking-tight">
-            {category.name} por ciudad
+            {bestNoun(noun)} por ciudad
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Explora las mejores empresas de {category.name.toLowerCase()} en tu
-            ciudad.
+            Explora {bestNoun(noun, true)} en tu ciudad.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {TOP_CITIES.map((city) => (
@@ -132,7 +184,7 @@ export default async function CategoryPage({
                   <MapPin className="size-4" />
                 </div>
                 <span className="text-sm font-medium">
-                  {category.name.split(" ")[0]} en {city.name}
+                  {noun} en {city.name}
                 </span>
               </Link>
             ))}

@@ -1,7 +1,9 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { childCategories } from "@/lib/constants";
 import type { SortOption } from "@/lib/ranking";
+import { cleanWebsiteUrl } from "@/lib/utils";
 import { withFallback } from "./db";
 import {
   demoClaimInfo,
@@ -30,10 +32,36 @@ const cardSelect = {
   priceRange: true,
   verified: true,
   featured: true,
+  keywords: true,
   category: { select: { name: true, icon: true } },
   city: { select: { name: true } },
   services: { select: { name: true }, orderBy: { order: "asc" }, take: 4 },
 } satisfies Prisma.CompanySelect;
+
+/** Marca en `keywords` que distingue a una empresa premiada/colaboradora. */
+export const AWARD_KEYWORD = "destaco-premiada";
+
+/**
+ * Empresa fijada como PRIMER resultado en los listados del vertical de
+ * marketing/SEO (categoria madre + todas sus subcategorias), sea cual sea la
+ * ciudad o provincia filtrada. Es una colocacion patrocinada/destacada.
+ */
+const PINNED_COMPANY_SLUG = "vertigo-marketing";
+const PINNED_CATEGORY_SLUGS = new Set<string>([
+  "marketing",
+  ...childCategories("marketing").map((c) => c.slug),
+]);
+
+/** Devuelve el slug a fijar arriba en este listado, o null si no aplica. */
+function pinnedSlugFor(params: ListCompaniesParams): string | null {
+  if (!params.categorySlug) return null;
+  // Solo en el orden por defecto (relevancia); si el usuario reordena por
+  // recientes/reseñas respetamos su criterio.
+  if (params.sort && params.sort !== "score") return null;
+  return PINNED_CATEGORY_SLUGS.has(params.categorySlug)
+    ? PINNED_COMPANY_SLUG
+    : null;
+}
 
 type CardRow = Prisma.CompanyGetPayload<{ select: typeof cardSelect }>;
 
@@ -51,6 +79,7 @@ function rowToCard(row: CardRow): CompanyCardData {
     priceRange: row.priceRange ? PRICE_RANGE_TO_NUMBER[row.priceRange] : null,
     verified: row.verified,
     featured: row.featured,
+    award: row.keywords.includes(AWARD_KEYWORD),
     services: row.services.map((s) => s.name),
   };
 }
@@ -93,12 +122,25 @@ export function listCompanies(
   const page = Math.max(1, params.page ?? 1);
   const perPage = params.perPage ?? PER_PAGE;
 
+  const pin = pinnedSlugFor(params);
+
   return withFallback<CompanyListResult>(
     async () => {
       const where: Prisma.CompanyWhereInput = {
         status: "PUBLISHED",
+        // Excluimos la empresa fijada del listado normal: la inyectamos aparte
+        // como primer resultado (evita duplicados cuando si encajaria).
+        ...(pin && { NOT: { slug: pin } }),
+        // Una pagina de categoria madre (p. ej. /marketing) agrega tambien las
+        // empresas de sus subcategorias (agencias-seo, agencias-publicidad...).
+        // Una subcategoria (/agencias-seo) solo coincide consigo misma.
         ...(params.categorySlug && {
-          category: { slug: params.categorySlug },
+          category: {
+            OR: [
+              { slug: params.categorySlug },
+              { parent: { slug: params.categorySlug } },
+            ],
+          },
         }),
         ...(params.citySlug && { city: { slug: params.citySlug } }),
         ...(params.provinceSlug && {
@@ -119,23 +161,41 @@ export function listCompanies(
         }),
       };
 
+      // Empresa fijada (Vertigo) para listados de marketing/SEO: ocupa el
+      // primer hueco de la pagina 1; el resto del paginado se desplaza 1.
+      const pinned = pin
+        ? await prisma.company.findFirst({
+            where: { slug: pin, status: "PUBLISHED" },
+            select: cardSelect,
+          })
+        : null;
+
+      const mainTake = pinned && page === 1 ? perPage - 1 : perPage;
+      const mainSkip = pinned
+        ? Math.max(0, (page - 1) * perPage - 1)
+        : (page - 1) * perPage;
+
       const [total, rows] = await Promise.all([
         prisma.company.count({ where }),
         prisma.company.findMany({
           where,
           select: cardSelect,
           orderBy: orderByFor(params.sort),
-          skip: (page - 1) * perPage,
-          take: perPage,
+          skip: mainSkip,
+          take: mainTake,
         }),
       ]);
 
+      const items = rows.map(rowToCard);
+      if (pinned && page === 1) items.unshift(rowToCard(pinned));
+
+      const grandTotal = total + (pinned ? 1 : 0);
       return {
-        items: rows.map(rowToCard),
-        total,
+        items,
+        total: grandTotal,
         page,
         perPage,
-        totalPages: Math.max(1, Math.ceil(total / perPage)),
+        totalPages: Math.max(1, Math.ceil(grandTotal / perPage)),
       };
     },
     () =>
@@ -212,15 +272,17 @@ function rowToDetail(row: DetailRow): CompanyDetail {
     longitude: row.longitude,
     phone: row.phone,
     email: row.email,
-    website: row.website,
+    website: cleanWebsiteUrl(row.website),
     priceRange: row.priceRange ? PRICE_RANGE_TO_NUMBER[row.priceRange] : null,
     founded: row.founded,
+    size: row.size,
     verified: row.verified,
     featured: row.featured,
     rating: row.ratingAvg,
     reviewCount: row.reviewCount,
     metaTitle: row.metaTitle,
     metaDescription: row.metaDescription,
+    keywords: row.keywords.filter((k) => k !== AWARD_KEYWORD),
     openingHours:
       (row.openingHours as unknown as CompanyDetail["openingHours"]) ?? null,
     services: row.services.map((s) => ({
@@ -255,6 +317,7 @@ export interface CompanyClaimInfo {
   name: string;
   slug: string;
   claimed: boolean;
+  website: string | null;
 }
 
 /** Datos minimos para la pagina de reclamacion de perfil. */
@@ -265,10 +328,15 @@ export function getCompanyClaimInfo(
     async () => {
       const row = await prisma.company.findFirst({
         where: { slug, status: "PUBLISHED" },
-        select: { name: true, slug: true, ownerId: true },
+        select: { name: true, slug: true, ownerId: true, website: true },
       });
       return row
-        ? { name: row.name, slug: row.slug, claimed: Boolean(row.ownerId) }
+        ? {
+            name: row.name,
+            slug: row.slug,
+            claimed: Boolean(row.ownerId),
+            website: row.website,
+          }
         : null;
     },
     () => demoClaimInfo(slug),

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getCompanyClaimInfo } from "@/lib/data/companies";
 import { buildMetadata } from "@/lib/seo";
+import { websiteDomain } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -79,7 +80,11 @@ export default async function ClaimPage({ params }: PageProps) {
             </Button>
           </div>
         ) : (
-          <ClaimForm companySlug={slug} companyName={company.name} />
+          <ClaimForm
+            companySlug={slug}
+            companyName={company.name}
+            companyDomain={websiteDomain(company.website)}
+          />
         )}
       </div>
     </>

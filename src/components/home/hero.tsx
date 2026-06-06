@@ -16,10 +16,13 @@ export async function Hero() {
   const stats = await getSiteStats();
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-x-clip">
+      {/* Halo de luz neutro y muy tenue (sin color) para dar profundidad. */}
+      <div aria-hidden className="spotlight pointer-events-none absolute inset-0" />
+      {/* Red de puntos discreta, desvanecida hacia los bordes. */}
       <div
         aria-hidden
-        className="dotted-bg absolute inset-0"
+        className="dotted-bg pointer-events-none absolute inset-0"
         style={{
           maskImage:
             "radial-gradient(ellipse 65% 55% at 50% 0%, black, transparent)",

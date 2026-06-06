@@ -4,48 +4,18 @@
  * posterior del pipeline: ENRICH.)
  */
 
-// Tipos de lugar de Google Places (New) -> slug de categoria.
-const GOOGLE_TYPE_MAP: Record<string, string> = {
-  restaurant: "restaurantes",
-  cafe: "restaurantes",
-  bar: "restaurantes",
-  bakery: "restaurantes",
-  meal_takeaway: "restaurantes",
-  meal_delivery: "restaurantes",
-  food: "restaurantes",
-  dentist: "dentistas",
-  dental_clinic: "dentistas",
-  lawyer: "abogados",
-  legal_services: "abogados",
-  accounting: "abogados",
-  notary_public: "abogados",
-  marketing_agency: "marketing",
-  advertising_agency: "marketing",
-  real_estate_agency: "inmobiliarias",
-  beauty_salon: "belleza",
-  hair_salon: "belleza",
-  hair_care: "belleza",
-  nail_salon: "belleza",
-  spa: "belleza",
-  school: "formacion",
-  primary_school: "formacion",
-  secondary_school: "formacion",
-  university: "formacion",
-  language_school: "formacion",
-  car_repair: "automocion",
-  car_dealer: "automocion",
-  car_wash: "automocion",
-  auto_parts_store: "automocion",
-  gym: "fitness",
-  fitness_center: "fitness",
-  sports_club: "fitness",
-  photographer: "fotografia",
-  general_contractor: "reformas",
-  electrician: "reformas",
-  plumber: "reformas",
-  painter: "reformas",
-  roofing_contractor: "reformas",
-};
+import { CATEGORIES } from "../constants";
+
+/**
+ * Tipos de lugar de Google Places (New) -> slug de categoria.
+ * Derivado del catalogo maestro (constants.ts): cada categoria declara los
+ * tipos de Google que le corresponden y aqui los invertimos a un mapa
+ * tipo -> slug. Asi la segmentacion del catalogo y la del importador no se
+ * desincronizan nunca.
+ */
+const GOOGLE_TYPE_MAP: Record<string, string> = Object.fromEntries(
+  CATEGORIES.flatMap((c) => c.googleTypes.map((type) => [type, c.slug])),
+);
 
 export function categorizeGoogle(
   primaryType?: string,

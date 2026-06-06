@@ -1,4 +1,4 @@
-import type { PriceRange } from "@prisma/client";
+import type { CompanySize, PriceRange } from "@prisma/client";
 
 /** Datos minimos para pintar una tarjeta de empresa. */
 export interface CompanyCardData {
@@ -14,6 +14,8 @@ export interface CompanyCardData {
   priceRange: number | null;
   verified: boolean;
   featured: boolean;
+  /** Empresa premiada/colaboradora (badge especial). */
+  award: boolean;
   services: string[];
 }
 
@@ -70,12 +72,14 @@ export interface CompanyDetail {
   website: string | null;
   priceRange: number | null;
   founded: number | null;
+  size: CompanySize | null;
   verified: boolean;
   featured: boolean;
   rating: number;
   reviewCount: number;
   metaTitle: string | null;
   metaDescription: string | null;
+  keywords: string[];
   openingHours: Record<string, [string, string][]> | null;
   services: { name: string; description: string | null }[];
   socials: { platform: string; url: string }[];

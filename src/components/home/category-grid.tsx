@@ -3,11 +3,16 @@ import { ArrowRight } from "lucide-react";
 
 import { CategoryIcon } from "@/components/category-icon";
 import { Reveal } from "@/components/reveal";
+import { FEATURED_CATEGORIES } from "@/lib/constants";
 import { listCategories } from "@/lib/data/categories";
 import { formatCompact } from "@/lib/utils";
 
 export async function CategoryGrid() {
-  const categories = await listCategories();
+  const all = await listCategories();
+  // En la home solo mostramos las categorias destacadas; el catalogo completo
+  // (todos los nichos segmentados) vive en /categorias.
+  const featured = new Set(FEATURED_CATEGORIES.map((c) => c.slug));
+  const categories = all.filter((c) => featured.has(c.slug));
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">

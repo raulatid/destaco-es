@@ -2,6 +2,7 @@
  * Cliente de Google Places API (New) — Text Search.
  * Fuente legal y oficial. Docs: https://developers.google.com/maps/documentation/places/web-service
  */
+import { cleanWebsiteUrl } from "../utils";
 import { categorizeGoogle } from "./categorize";
 import { cleanCityName, cleanProvinceName } from "./geo";
 import type { NormalizedCompany, OpeningHours } from "./types";
@@ -89,7 +90,7 @@ function normalize(place: GooglePlace): NormalizedCompany | null {
     name: place.displayName.text,
     categorySlug: categorizeGoogle(place.primaryType, place.types),
     shortDescription: place.editorialSummary?.text,
-    website: place.websiteUri,
+    website: cleanWebsiteUrl(place.websiteUri) ?? undefined,
     phone: place.nationalPhoneNumber ?? place.internationalPhoneNumber,
     addressLine: place.formattedAddress,
     postalCode: findComponent(components, "postal_code"),

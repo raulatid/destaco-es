@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { Select } from "@/components/ui/select";
 import { SORT_OPTIONS, type SortOption } from "@/lib/ranking";
 
 export function SortControl({ value }: { value: SortOption }) {
@@ -24,18 +25,18 @@ export function SortControl({ value }: { value: SortOption }) {
 
   return (
     <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Ordenar por</span>
-      <select
+      <span className="text-muted-foreground shrink-0">Ordenar por</span>
+      <Select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border-border bg-card focus-visible:ring-ring rounded-lg border px-3 py-1.5 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+        className="w-auto py-1.5"
       >
         {Object.entries(SORT_OPTIONS).map(([key, label]) => (
           <option key={key} value={key}>
             {label}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   );
 }

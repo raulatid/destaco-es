@@ -40,7 +40,7 @@ export default async function EditarEmpresaPage({
         <Button asChild variant="outline" size="sm">
           <Link href={`/dashboard/empresas/${id}/proyectos`}>
             <FolderOpen className="size-4" />
-            Proyectos
+            Portfolio
           </Link>
         </Button>
       </div>

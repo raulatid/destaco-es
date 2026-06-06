@@ -1,4 +1,8 @@
-import type { CompanyStatus } from "@prisma/client";
+import type {
+  CompanyStatus,
+  SubscriptionPlan,
+  SubscriptionStatus,
+} from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { withFallback } from "./db";
@@ -13,6 +17,7 @@ export interface MyCompanyRow {
   ratingAvg: number;
   reviewCount: number;
   viewCount: number;
+  featured: boolean;
 }
 
 export function getMyCompanies(ownerId: string): Promise<MyCompanyRow[]> {
@@ -36,6 +41,7 @@ export function getMyCompanies(ownerId: string): Promise<MyCompanyRow[]> {
         ratingAvg: c.ratingAvg,
         reviewCount: c.reviewCount,
         viewCount: c.viewCount,
+        featured: c.featured,
       }));
     },
     () => [],
@@ -166,6 +172,8 @@ export interface EditableCompany {
   postalCode: string;
   provinceSlug: string;
   cityName: string;
+  founded: string;
+  size: string;
 }
 
 export function getMyCompany(
@@ -196,6 +204,66 @@ export function getMyCompany(
         postalCode: c.postalCode ?? "",
         provinceSlug: c.province?.slug ?? "",
         cityName: c.city?.name ?? "",
+        founded: c.founded?.toString() ?? "",
+        size: c.size ?? "",
+      };
+    },
+    () => null,
+  );
+}
+
+export interface CompanyBilling {
+  companyId: string;
+  companyName: string;
+  companySlug: string;
+  status: CompanyStatus;
+  /** La empresa esta destacada ahora mismo. */
+  featured: boolean;
+  featuredUntil: string | null;
+  plan: SubscriptionPlan;
+  subStatus: SubscriptionStatus | null;
+  currentPeriodEnd: string | null;
+  /** Tiene cliente en Stripe => puede abrir el portal de facturacion. */
+  hasSubscription: boolean;
+}
+
+export function getCompanyBilling(
+  ownerId: string,
+  companyId: string,
+): Promise<CompanyBilling | null> {
+  return withFallback<CompanyBilling | null>(
+    async () => {
+      const c = await prisma.company.findFirst({
+        where: { id: companyId, ownerId },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          featured: true,
+          featuredUntil: true,
+          subscription: {
+            select: {
+              plan: true,
+              status: true,
+              currentPeriodEnd: true,
+              stripeCustomerId: true,
+            },
+          },
+        },
+      });
+      if (!c) return null;
+      return {
+        companyId: c.id,
+        companyName: c.name,
+        companySlug: c.slug,
+        status: c.status,
+        featured: c.featured,
+        featuredUntil: c.featuredUntil?.toISOString() ?? null,
+        plan: c.subscription?.plan ?? "FREE",
+        subStatus: c.subscription?.status ?? null,
+        currentPeriodEnd: c.subscription?.currentPeriodEnd?.toISOString() ?? null,
+        hasSubscription: Boolean(c.subscription?.stripeCustomerId),
       };
     },
     () => null,

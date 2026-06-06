@@ -23,13 +23,15 @@ interface PageProps {
 export async function generateMetadata({
   searchParams,
 }: PageProps): Promise<Metadata> {
-  const { q } = await searchParams;
+  const { q, categoria, ubicacion, page } = await searchParams;
   return buildMetadata({
     title: q ? `Resultados para "${q}"` : "Todas las empresas",
     description:
       "Busca y compara empresas verificadas de toda Espana por sector, ciudad y valoraciones.",
     path: "/empresas",
-    noindex: Boolean(q),
+    // Solo /empresas (sin filtros ni paginacion) se indexa; las vistas
+    // filtradas/buscadas/paginadas son "thin"/duplicadas: noindex, follow.
+    noindex: Boolean(q || categoria || ubicacion) || (Number(page) || 1) > 1,
   });
 }
 

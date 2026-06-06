@@ -10,6 +10,8 @@ import { slugify } from "@/lib/utils";
 
 export type CompanyFormState = { error?: string };
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 const CompanySchema = z.object({
   name: z.string().min(2, "El nombre es obligatorio."),
   categorySlug: z.string().min(1, "Selecciona una categoria."),
@@ -30,6 +32,19 @@ const CompanySchema = z.object({
   postalCode: z.string().max(10).optional(),
   provinceSlug: z.string().optional(),
   cityName: z.string().max(120).optional(),
+  founded: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : Number(v)),
+    z
+      .number()
+      .int()
+      .min(1800, "El ano de fundacion no es valido.")
+      .max(CURRENT_YEAR, "El ano de fundacion no puede ser futuro.")
+      .optional(),
+  ),
+  size: z.preprocess(
+    (v) => (v === "" || v == null ? undefined : v),
+    z.enum(["SOLO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"]).optional(),
+  ),
 });
 
 async function uniqueSlug(name: string, city?: string): Promise<string> {
@@ -96,6 +111,27 @@ export async function createCompany(
     d.provinceSlug,
     d.cityName,
   );
+
+  // Anti-duplicados: una persona no puede registrar la misma empresa dos veces.
+  // Comparamos por nombre (insensible a mayusculas) y ciudad. Si ya existe en
+  // el directorio, invitamos a reclamar la ficha en lugar de crear otra.
+  const existingCompany = await prisma.company.findFirst({
+    where: {
+      name: { equals: d.name, mode: "insensitive" },
+      ...(cityId ? { cityId } : {}),
+    },
+    select: { ownerId: true, slug: true },
+  });
+  if (existingCompany) {
+    if (existingCompany.ownerId === session.user.id) {
+      return { error: "Ya tienes registrada esta empresa." };
+    }
+    return {
+      error:
+        "Esta empresa ya existe en el directorio. Reclama su ficha desde su pagina en lugar de crear una nueva.",
+    };
+  }
+
   const slug = await uniqueSlug(d.name, d.cityName);
 
   await prisma.company.create({
@@ -110,6 +146,8 @@ export async function createCompany(
       email: d.email || null,
       addressLine: d.addressLine || null,
       postalCode: d.postalCode || null,
+      founded: d.founded ?? null,
+      size: d.size ?? null,
       provinceId,
       cityId,
       ownerId: session.user.id,
@@ -167,6 +205,8 @@ export async function updateCompany(
       email: d.email || null,
       addressLine: d.addressLine || null,
       postalCode: d.postalCode || null,
+      founded: d.founded ?? null,
+      size: d.size ?? null,
       provinceId,
       cityId,
     },

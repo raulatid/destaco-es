@@ -3,30 +3,41 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   BadgeCheck,
+  Building2,
+  Calendar,
   Clock,
   Globe,
   Mail,
   MapPin,
   MessageSquare,
   Phone,
+  Users,
 } from "lucide-react";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CategoryIcon } from "@/components/category-icon";
 import { JsonLd } from "@/components/json-ld";
 import { ProfileTracker } from "@/components/metrics/profile-tracker";
-import { ReviewForm } from "@/components/reviews/review-form";
+import { ReviewGate } from "@/components/reviews/review-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/ui/star-rating";
-import { auth } from "@/lib/auth";
 import { getCompanyBySlug } from "@/lib/data/companies";
 import {
   breadcrumbJsonLd,
   buildMetadata,
+  companyIntro,
+  companyMetaDescription,
+  companyMetaTitle,
   faqJsonLd,
   localBusinessJsonLd,
 } from "@/lib/seo";
+import {
+  COMPANY_SIZE_LABEL,
+  COMPANY_SIZE_RANGE,
+  displayWebsite,
+  formatAddress,
+} from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -68,13 +79,9 @@ export async function generateMetadata({
   const company = await getCompanyBySlug(slug);
   if (!company) return {};
   return buildMetadata({
-    title:
-      company.metaTitle ??
-      `${company.name} — ${company.categoryName}${company.city ? ` en ${company.city}` : ""}`,
-    description:
-      company.metaDescription ??
-      company.shortDescription ??
-      `${company.name}, empresa de ${company.categoryName} en Espana. Valoraciones, servicios y contacto.`,
+    title: company.metaTitle ?? companyMetaTitle(company),
+    description: company.metaDescription ?? companyMetaDescription(company),
+    image: company.coverImage ?? undefined,
     path: `/empresa/${slug}`,
   });
 }
@@ -83,8 +90,6 @@ export default async function CompanyPage({ params }: PageProps) {
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();
-
-  const session = await auth();
 
   const mapsQuery =
     company.latitude && company.longitude
@@ -113,6 +118,13 @@ export default async function CompanyPage({ params }: PageProps) {
           longitude: company.longitude ?? undefined,
           ratingAvg: company.rating || undefined,
           reviewCount: company.reviewCount || undefined,
+          foundingYear: company.founded ?? undefined,
+          employeesMin: company.size
+            ? COMPANY_SIZE_RANGE[company.size].min
+            : undefined,
+          employeesMax: company.size
+            ? COMPANY_SIZE_RANGE[company.size].max
+            : undefined,
         })}
       />
       <JsonLd
@@ -196,6 +208,18 @@ export default async function CompanyPage({ params }: PageProps) {
                     {PRICE_LABEL[company.priceRange]}
                   </span>
                 )}
+                {company.founded && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="size-4" />
+                    Desde {company.founded}
+                  </span>
+                )}
+                {company.size && (
+                  <span className="flex items-center gap-1.5">
+                    <Users className="size-4" />
+                    {COMPANY_SIZE_LABEL[company.size]}
+                  </span>
+                )}
               </div>
               {company.reviewCount > 0 && (
                 <div className="mt-3">
@@ -237,16 +261,26 @@ export default async function CompanyPage({ params }: PageProps) {
       {/* Contenido */}
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-3 lg:px-8">
         <div className="space-y-10 lg:col-span-2">
-          {company.description && (
-            <section>
-              <h2 className="text-xl font-semibold tracking-tight">
-                Sobre {company.name}
-              </h2>
-              <p className="text-muted-foreground mt-3 leading-relaxed">
-                {company.description}
-              </p>
-            </section>
-          )}
+          <section>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Sobre {company.name}
+            </h2>
+            <p className="text-muted-foreground mt-3 leading-relaxed">
+              {company.description ?? companyIntro(company)}
+            </p>
+            {company.keywords.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {company.keywords.slice(0, 12).map((kw) => (
+                  <span
+                    key={kw}
+                    className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium"
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
 
           {company.services.length > 0 && (
             <section>
@@ -391,16 +425,7 @@ export default async function CompanyPage({ params }: PageProps) {
               </div>
             )}
 
-            {session?.user ? (
-              <ReviewForm companySlug={company.slug} />
-            ) : (
-              <p className="text-muted-foreground mt-4 text-sm">
-                <Link href="/login" className="text-foreground font-medium">
-                  Inicia sesion
-                </Link>{" "}
-                para escribir una resena.
-              </p>
-            )}
+            <ReviewGate companySlug={company.slug} />
           </section>
         </div>
 
@@ -438,17 +463,13 @@ export default async function CompanyPage({ params }: PageProps) {
                   className="hover:text-primary flex items-center gap-2.5 break-all transition-colors"
                 >
                   <Globe className="text-muted-foreground size-4 shrink-0" />
-                  {company.website.replace(/^https?:\/\//, "")}
+                  {displayWebsite(company.website)}
                 </a>
               )}
-              {(company.addressLine || company.city) && (
+              {formatAddress(company) && (
                 <div className="flex items-start gap-2.5">
                   <MapPin className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-                  <span>
-                    {[company.addressLine, company.postalCode, company.city]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </span>
+                  <span>{formatAddress(company)}</span>
                 </div>
               )}
             </div>
@@ -490,6 +511,40 @@ export default async function CompanyPage({ params }: PageProps) {
               </dl>
             </div>
           )}
+
+          <div className="bg-card rounded-xl border p-5">
+            <h2 className="font-semibold tracking-tight">Explora mas</h2>
+            <div className="mt-3 flex flex-col gap-2 text-sm">
+              {company.citySlug && (
+                <Link
+                  href={`/${company.categorySlug}/${company.citySlug}`}
+                  className="text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
+                >
+                  <MapPin className="size-4 shrink-0" />
+                  Mejores {company.categoryName.toLowerCase()} en {company.city}
+                </Link>
+              )}
+              <Link
+                href={`/${company.categorySlug}`}
+                className="text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
+              >
+                <CategoryIcon
+                  name={company.categoryIcon}
+                  className="size-4 shrink-0"
+                />
+                Todos los {company.categoryName.toLowerCase()} en España
+              </Link>
+              {company.provinceSlug && (
+                <Link
+                  href={`/provincias/${company.provinceSlug}`}
+                  className="text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
+                >
+                  <Building2 className="size-4 shrink-0" />
+                  Empresas en {company.province}
+                </Link>
+              )}
+            </div>
+          </div>
 
           <div className="bg-card rounded-xl border p-5">
             <h2 className="font-semibold tracking-tight">Es tu empresa?</h2>

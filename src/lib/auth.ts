@@ -15,6 +15,10 @@ import { verifyPassword } from "@/lib/password";
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // Confiar en el host de la peticion (Vercel/proxy) para derivar las URLs de
+  // callback. Sin esto, Auth.js cae a http://localhost:3000 y el login OAuth
+  // de Google falla con redirect_uri_mismatch en produccion.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [

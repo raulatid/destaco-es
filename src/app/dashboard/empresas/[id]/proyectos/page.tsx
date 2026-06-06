@@ -25,10 +25,10 @@ export default async function ProyectosPage({
     <div className="max-w-2xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Proyectos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Portfolio</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Casos de exito de {data.companyName}. Los proyectos mejoran tu
-            posicion en el ranking y tu perfil.
+            Portfolio de proyectos y casos de exito de {data.companyName}. Tus
+            trabajos mejoran tu posicion en el ranking y tu perfil.
           </p>
         </div>
         <Button asChild variant="outline" size="sm">

@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
 
 import { Prisma } from "@prisma/client";
 
+import { bestNoun, categoryNoun } from "../constants";
 import { prisma } from "../prisma";
 import { landingTitle } from "../seo";
 
@@ -72,7 +73,7 @@ export async function syncSeoPages(): Promise<SeoSyncResult> {
     drafts.push({
       path: `/${c.slug}`,
       kind: "category",
-      title: `Las mejores empresas de ${c.name}`,
+      title: `${bestNoun(categoryNoun(c.slug, c.name))} en España`,
       categoryId: c.id,
       itemCount: c.companyCount,
       indexable: c.companyCount >= MIN_ITEMS_FOR_INDEX,
@@ -93,7 +94,14 @@ export async function syncSeoPages(): Promise<SeoSyncResult> {
   // Landing categoria+ciudad: contamos empresas reales por par.
   const pairs = new Map<
     string,
-    { categoryId: string; cityId: string; catName: string; cityName: string; count: number }
+    {
+      categoryId: string;
+      cityId: string;
+      catSlug: string;
+      catName: string;
+      cityName: string;
+      count: number;
+    }
   >();
   for (const company of companies) {
     if (!company.city) continue;
@@ -105,6 +113,7 @@ export async function syncSeoPages(): Promise<SeoSyncResult> {
       pairs.set(path, {
         categoryId: company.categoryId,
         cityId: company.city.id,
+        catSlug: company.category.slug,
         catName: company.category.name,
         cityName: company.city.name,
         count: 1,
@@ -115,7 +124,10 @@ export async function syncSeoPages(): Promise<SeoSyncResult> {
     drafts.push({
       path,
       kind: "category_city",
-      title: landingTitle(info.catName, info.cityName),
+      title: landingTitle(
+        categoryNoun(info.catSlug, info.catName),
+        info.cityName,
+      ),
       categoryId: info.categoryId,
       cityId: info.cityId,
       itemCount: info.count,

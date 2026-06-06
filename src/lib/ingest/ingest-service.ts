@@ -15,7 +15,19 @@ import { searchOpenStreetMap } from "./openstreetmap";
 import type { IngestStats, NormalizedCompany } from "./types";
 
 export type IngestParams =
-  | { source: "GOOGLE_PLACES"; query: string; limit?: number }
+  | {
+      source: "GOOGLE_PLACES";
+      query: string;
+      limit?: number;
+      /**
+       * Categoria de la BUSQUEDA (intencion). La Places API (New) devuelve
+       * `primaryType=service` para muchos negocios de servicios (marketing,
+       * asesorias, etc.), sin un tipo mapeable. Como la consulta ya es de
+       * intencion ("agencias de marketing en Madrid"), usamos este slug como
+       * respaldo cuando el tipo de Google no permite categorizar.
+       */
+      categorySlug?: string;
+    }
   | { source: "OPENSTREETMAP"; area: string; category: string; limit?: number };
 
 export interface IngestOptions {
@@ -30,6 +42,23 @@ export interface IngestRunResult {
   source: string;
   query: string;
   stats: IngestStats;
+  /** Slugs de las fichas creadas en esta ejecucion (para auto-indexacion). */
+  createdSlugs: string[];
+}
+
+/**
+ * Filtro de veracidad: solo dejamos pasar fichas con datos reales suficientes.
+ * Exigimos nombre, direccion fisica y al menos un canal de contacto (telefono
+ * o web). Asi evitamos publicar fichas "fantasma" o con datos incompletos.
+ */
+function isVeracious(company: NormalizedCompany): boolean {
+  const hasName = Boolean(company.name?.trim());
+  const hasAddress = Boolean(company.addressLine?.trim());
+  const hasContact = Boolean(company.phone?.trim() || company.website?.trim());
+  const hasGeo =
+    typeof company.latitude === "number" &&
+    typeof company.longitude === "number";
+  return hasName && hasAddress && hasContact && hasGeo;
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {
@@ -152,19 +181,30 @@ export async function runIngestion(
   const touchedCities = new Set<string>();
   const touchedProvinces = new Set<string>();
   const createdIds: string[] = [];
+  const createdSlugs: string[] = [];
 
   try {
     const companies = await fetchCompanies(params);
     stats.found = companies.length;
 
+    // Respaldo de categoria por intencion de busqueda (solo Google Places).
+    const fallbackCategorySlug =
+      params.source === "GOOGLE_PLACES" ? params.categorySlug : undefined;
+
     for (const company of companies) {
       try {
-        if (!company.categorySlug) {
+        const categorySlug = company.categorySlug ?? fallbackCategorySlug;
+        if (!categorySlug) {
+          stats.skipped++;
+          continue;
+        }
+        // Veracidad: descartamos fichas sin datos reales suficientes.
+        if (!isVeracious(company)) {
           stats.skipped++;
           continue;
         }
         const category = await prisma.category.findUnique({
-          where: { slug: company.categorySlug },
+          where: { slug: categorySlug },
           select: { id: true },
         });
         if (!category) {
@@ -220,9 +260,10 @@ export async function runIngestion(
           const slug = await uniqueSlug(company.name, company.cityName);
           const created = await prisma.company.create({
             data: { ...data, slug, status: "DRAFT" },
-            select: { id: true },
+            select: { id: true, slug: true },
           });
           createdIds.push(created.id);
+          createdSlugs.push(created.slug);
           stats.created++;
         }
 
@@ -280,5 +321,5 @@ export async function runIngestion(
     throw error;
   }
 
-  return { jobId: job.id, source: params.source, query, stats };
+  return { jobId: job.id, source: params.source, query, stats, createdSlugs };
 }

@@ -164,6 +164,7 @@ function toCard(c: DemoCompany): CompanyCardData {
     priceRange: c.priceRange,
     verified: c.verified,
     featured: c.featured,
+    award: false,
     services: c.services,
   };
 }
@@ -354,12 +355,16 @@ export function demoCompanyDetail(slug: string): CompanyDetail | null {
     website: `https://www.${c.slug}.es`,
     priceRange: c.priceRange,
     founded: 2005 + (hash(c.slug) % 18),
+    size: (["SOLO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"] as const)[
+      hash(c.slug) % 5
+    ],
     verified: c.verified,
     featured: c.featured,
     rating: c.rating,
     reviewCount: c.reviewCount,
     metaTitle: null,
     metaDescription: null,
+    keywords: [],
     openingHours: {
       mon: [["09:00", "18:00"]],
       tue: [["09:00", "18:00"]],
@@ -408,9 +413,16 @@ export function demoCompanyDetail(slug: string): CompanyDetail | null {
 
 export function demoClaimInfo(
   slug: string,
-): { name: string; slug: string; claimed: boolean } | null {
+): { name: string; slug: string; claimed: boolean; website: string | null } | null {
   const c = COMPANIES.find((x) => x.slug === slug);
-  return c ? { name: c.name, slug: c.slug, claimed: false } : null;
+  return c
+    ? {
+        name: c.name,
+        slug: c.slug,
+        claimed: false,
+        website: `https://www.${c.slug}.es`,
+      }
+    : null;
 }
 
 export function demoSiteStats() {

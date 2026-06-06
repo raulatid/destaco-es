@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, BadgeCheck, MapPin } from "lucide-react";
+import { ArrowUpRight, Award, BadgeCheck, MapPin } from "lucide-react";
 
 import { CategoryIcon } from "@/components/category-icon";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,13 @@ export function CompanyCard({
           {initials(company.name)}
         </div>
         <div className="flex items-center gap-2">
-          {company.featured && (
+          {company.award && (
+            <Badge className="bg-primary text-primary-foreground gap-1 border-transparent">
+              <Award className="size-3" />
+              Premiada
+            </Badge>
+          )}
+          {company.featured && !company.award && (
             <Badge variant="outline" className="text-muted-foreground">
               Destacada
             </Badge>

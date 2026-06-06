@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { LayoutDashboard, LogOut, Menu, Search, Shield, X } from "lucide-react";
-import type { UserRole } from "@prisma/client";
 
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -20,15 +21,21 @@ import { logout } from "@/lib/actions/auth";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-interface SiteHeaderProps {
-  user: { name?: string | null; role: UserRole } | null;
-}
-
-export function SiteHeader({ user }: SiteHeaderProps) {
+export function SiteHeader() {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const user = session?.user ?? null;
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const firstName = user?.name?.split(" ")[0] ?? "Cuenta";
   const initial = (user?.name?.[0] ?? "U").toUpperCase();
+
+  function onSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = search.trim();
+    router.push(q ? `/empresas?q=${encodeURIComponent(q)}` : "/empresas");
+  }
 
   return (
     <header className="glass border-border/60 sticky top-0 z-50 w-full border-b">
@@ -48,13 +55,21 @@ export function SiteHeader({ user }: SiteHeaderProps) {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <Link
-            href="/empresas"
-            className="text-muted-foreground border-border bg-secondary/60 hover:bg-secondary hidden h-9 w-56 items-center gap-2 rounded-lg border px-3 text-sm transition-colors lg:flex"
+          <form
+            onSubmit={onSearch}
+            className="border-border bg-secondary/60 focus-within:bg-secondary focus-within:ring-ring/40 hidden h-9 w-56 items-center gap-2 rounded-lg border px-3 transition-colors focus-within:ring-2 lg:flex"
           >
-            <Search className="size-4" />
-            Buscar empresas...
-          </Link>
+            <button type="submit" aria-label="Buscar" className="shrink-0">
+              <Search className="text-muted-foreground size-4" />
+            </button>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar empresas..."
+              className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-none"
+            />
+          </form>
 
           <ThemeToggle />
 

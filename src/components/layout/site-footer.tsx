@@ -14,7 +14,6 @@ import {
 const COMPANY_LINKS = [
   { label: "Sobre nosotros", href: "/sobre-nosotros" },
   { label: "Precios", href: "/precios" },
-  { label: "Blog", href: "/blog" },
   { label: "Contacto", href: "/contacto" },
   { label: "Publicar empresa", href: "/registro" },
 ];
@@ -110,9 +109,22 @@ export function SiteFooter() {
           <p className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} {SITE.name}. Hecho en Espana.
           </p>
-          <p className="text-muted-foreground text-xs">
-            Datos de fuentes publicas y verificadas.
-          </p>
+          <div className="flex flex-col items-center gap-1 sm:items-end">
+            <p className="text-muted-foreground text-xs">
+              Datos de fuentes publicas y verificadas.
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Desarrollado por{" "}
+              <a
+                href="https://vertigomkt.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground font-medium underline-offset-4 hover:underline"
+              >
+                Vértigo Marketing
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>

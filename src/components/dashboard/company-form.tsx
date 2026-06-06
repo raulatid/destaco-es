@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CompanyFormState } from "@/app/dashboard/empresas/actions";
 import type { EditableCompany } from "@/lib/data/dashboard";
-import { cn } from "@/lib/utils";
+import { cn, COMPANY_SIZE_LABEL, COMPANY_SIZES } from "@/lib/utils";
 
 interface Option {
   slug: string;
@@ -25,6 +25,8 @@ interface CompanyFormProps {
 }
 
 const INITIAL: CompanyFormState = {};
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 const controlClass =
   "flex h-10 w-full rounded-lg border bg-background px-3.5 text-sm shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30";
@@ -101,6 +103,34 @@ export function CompanyForm({
           className={cn(controlClass, "h-auto py-2.5 leading-relaxed")}
         />
       </Field>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="Ano de fundacion">
+          <Input
+            name="founded"
+            type="number"
+            inputMode="numeric"
+            min={1800}
+            max={CURRENT_YEAR}
+            defaultValue={initial?.founded}
+            placeholder="2015"
+          />
+        </Field>
+        <Field label="Tamano de la plantilla (trabajadores)">
+          <select
+            name="size"
+            defaultValue={initial?.size ?? ""}
+            className={controlClass}
+          >
+            <option value="">Sin especificar</option>
+            {COMPANY_SIZES.map((s) => (
+              <option key={s} value={s}>
+                {COMPANY_SIZE_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Web">

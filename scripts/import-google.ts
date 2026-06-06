@@ -18,8 +18,13 @@ async function main() {
     console.log(`  Importacion omitida: ${result.reason}`);
     return;
   }
+  const updated = result.runs.reduce((n, r) => n + r.stats.updated, 0);
+  const skipped = result.runs.reduce((n, r) => n + r.stats.skipped, 0);
   console.log(
-    `  "${result.query}" — ${result.stats.created} nuevas, ${result.stats.updated} actualizadas, ${result.stats.skipped} omitidas.`,
+    `  ${result.queries} consultas (${result.gaps} huecos pendientes) — ` +
+      `${result.created} nuevas, ${updated} actualizadas, ${skipped} omitidas. ` +
+      `IndexNow: ${result.indexed.indexNow ? "ok" : "no"}, ` +
+      `sitemap: ${result.indexed.sitemap ? "ok" : "no"}.`,
   );
 }
 

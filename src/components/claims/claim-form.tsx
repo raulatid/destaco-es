@@ -15,10 +15,11 @@ const controlClass =
 
 export function ClaimForm({
   companySlug,
-  companyName,
+  companyDomain,
 }: {
   companySlug: string;
   companyName: string;
+  companyDomain?: string | null;
 }) {
   const action = requestClaim.bind(null, companySlug);
   const [state, formAction, pending] = useActionState(action, INITIAL);
@@ -43,7 +44,7 @@ export function ClaimForm({
           name="email"
           type="email"
           required
-          placeholder={`nombre@${companyName.toLowerCase().replace(/\s+/g, "")}.es`}
+          placeholder={`nombre@${companyDomain ?? "tuempresa.com"}`}
         />
         <p className="text-muted-foreground text-xs">
           Usa un correo del dominio de la empresa para que la verificacion sea
