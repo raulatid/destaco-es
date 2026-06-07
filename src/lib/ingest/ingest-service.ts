@@ -37,6 +37,9 @@ export interface IngestOptions {
   autoPublish?: boolean;
 }
 
+/** Fichas que se enriquecen con IA a la vez (limita carga y rate limit OpenAI). */
+const ENRICH_CONCURRENCY = 6;
+
 export interface IngestRunResult {
   jobId: string;
   source: string;
@@ -281,12 +284,20 @@ export async function runIngestion(
     // intervencion manual. El enriquecimiento es best-effort: si OpenAI falla
     // o no hay clave, la ficha se publica igualmente con los datos de Maps.
     if (options.autoEnrich && createdIds.length > 0) {
-      for (const id of createdIds) {
-        try {
-          await enrichCompany(id);
-        } catch (error) {
-          stats.errors++;
-          console.error("Ingesta — enriquecimiento fallido:", error);
+      // Enriquecemos en paralelo con concurrencia acotada: una llamada a OpenAI
+      // por ficha en serie agota el tiempo de la funcion serverless y solo
+      // entran unas pocas empresas al dia. Por lotes de ENRICH_CONCURRENCY el
+      // tiempo total baja ~Nx y la importacion alcanza el tope diario.
+      for (let i = 0; i < createdIds.length; i += ENRICH_CONCURRENCY) {
+        const batch = createdIds.slice(i, i + ENRICH_CONCURRENCY);
+        const results = await Promise.allSettled(
+          batch.map((id) => enrichCompany(id)),
+        );
+        for (const r of results) {
+          if (r.status === "rejected") {
+            stats.errors++;
+            console.error("Ingesta — enriquecimiento fallido:", r.reason);
+          }
         }
       }
     }

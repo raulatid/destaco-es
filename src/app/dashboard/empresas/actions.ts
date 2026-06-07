@@ -175,6 +175,8 @@ export async function createCompany(
 
   const slug = await uniqueSlug(d.name, d.cityName);
 
+  // Auto-aprobacion: las empresas que crea el usuario se publican directamente
+  // (sin moderacion manual del admin).
   await prisma.company.create({
     data: {
       slug,
@@ -194,12 +196,13 @@ export async function createCompany(
       cityId,
       ownerId: session.user.id,
       source: "CLAIMED",
-      status: "PENDING",
+      status: "PUBLISHED",
       services: { create: parseServices(d.services) },
     },
   });
 
   revalidatePath("/dashboard/empresas");
+  revalidatePath(`/empresa/${slug}`);
   redirect("/dashboard/empresas");
 }
 

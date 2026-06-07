@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { runDailyGoogleImport } from "@/lib/ingest/google-daily";
 
-// El import diario tambien enriquece con IA y publica (20 fichas), lo que puede
-// pasar de 60 s. En plan Pro el limite llega a 300 s. (En Hobby/free, bajalo a
-// 60 y reduce DAILY_IMPORT_LIMIT.)
+// El import diario enriquece con IA (en paralelo) y publica hasta ~100 fichas,
+// lo que requiere mas de 60 s. Necesita plan Vercel Pro (limite 300 s). En
+// Hobby/free el limite real es 60 s: ahi no caben 100 fichas con IA, baja
+// DAILY_NEW_CAP/DAILY_QUERY_BUDGET en google-daily.ts.
 export const maxDuration = 300;
 
 function authorized(req: NextRequest): boolean {
