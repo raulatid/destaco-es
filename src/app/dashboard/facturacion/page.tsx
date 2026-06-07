@@ -7,17 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getMyBilling } from "@/lib/data/dashboard";
-import { FEATURED_PRICE } from "@/lib/stripe";
+import { euro, FEATURED_TIERS, tierForScope } from "@/lib/plans";
 
 export const metadata = {
   title: "Facturacion",
 };
-
-const euro = (n: number) =>
-  new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(n);
 
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES", { dateStyle: "long" }) : null;
@@ -56,8 +50,8 @@ export default async function FacturacionPage() {
                   : "Ninguna empresa destacada"}
               </p>
               <p className="text-muted-foreground mt-0.5 text-sm">
-                Plan Destacado: {euro(FEATURED_PRICE.base)} / año + IVA (
-                {euro(FEATURED_PRICE.total)} IVA incluido).
+                Plan Destacado: Regional {euro(FEATURED_TIERS.REGIONAL.base)} ·
+                Nacional {euro(FEATURED_TIERS.NACIONAL.base)} / año + IVA.
               </p>
             </div>
             <Button asChild variant="outline" size="sm">
@@ -103,6 +97,13 @@ export default async function FacturacionPage() {
                             ? "No hemos podido cobrar tu ultimo pago. Actualiza tu metodo de pago."
                             : "Destacala para aparecer por encima del resto en tu categoria."}
                       </p>
+                      {isActive && b.featuredScope && (
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          {FEATURED_TIERS[tierForScope(b.featuredScope)].name} ·{" "}
+                          {euro(FEATURED_TIERS[tierForScope(b.featuredScope)].base)}{" "}
+                          / año + IVA
+                        </p>
+                      )}
                     </div>
                     <Button asChild variant="ghost" size="sm">
                       <Link href={`/dashboard/empresas/${b.companyId}/destacar`}>

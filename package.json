@@ -16,6 +16,7 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "rank": "tsx scripts/rank.ts",
+    "stripe:prices": "tsx scripts/create-stripe-prices.ts",
     "seo:sync": "tsx scripts/seo-sync.ts",
     "import:google": "tsx scripts/import-google.ts",
     "setup": "node scripts/setup.mjs"

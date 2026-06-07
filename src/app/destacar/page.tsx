@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Building2,
   Check,
-  MapPin,
   Search,
   Sparkles,
   Star,
@@ -15,13 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getMyCompanies } from "@/lib/data/dashboard";
+import { euro, FEATURED_TIER_ORDER, FEATURED_TIERS } from "@/lib/plans";
 import { buildMetadata } from "@/lib/seo";
-import { FEATURED_PRICE } from "@/lib/stripe";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = buildMetadata({
   title: "Destaca tu empresa",
   description:
-    "Aparece por encima del resto en tu categoria. Elige donde destacar: tu localidad, tu provincia o toda España, al mismo precio.",
+    "Aparece por encima del resto en tu categoria. Elige tu nivel: Regional (tu provincia) por 49,99 €/año o Nacional (toda España) por 99,99 €/año.",
   path: "/destacar",
   noindex: true,
 });
@@ -33,30 +33,6 @@ const BENEFITS = [
   "Estadisticas avanzadas de rendimiento",
   "Soporte prioritario",
 ];
-
-const SCOPES = [
-  {
-    icon: MapPin,
-    title: "Tu localidad",
-    description: "Ideal para restaurantes, comercios y negocios de barrio.",
-  },
-  {
-    icon: MapPin,
-    title: "Tu provincia",
-    description: "Destaca en toda tu provincia para captar clientes cercanos.",
-  },
-  {
-    icon: MapPin,
-    title: "Toda España",
-    description: "Maxima visibilidad a nivel nacional en tu sector.",
-  },
-];
-
-const euro = (n: number) =>
-  new Intl.NumberFormat("es-ES", {
-    style: "currency",
-    currency: "EUR",
-  }).format(n);
 
 export default async function DestacarPage() {
   const session = await auth();
@@ -73,32 +49,59 @@ export default async function DestacarPage() {
         meta={
           <span className="flex items-center gap-1.5">
             <Star className="size-4" />
-            {euro(FEATURED_PRICE.base)} / año + IVA · {euro(FEATURED_PRICE.total)}{" "}
-            IVA incluido
+            Desde {euro(FEATURED_TIERS.REGIONAL.base)} / año + IVA · Nacional{" "}
+            {euro(FEATURED_TIERS.NACIONAL.base)} / año
           </span>
         }
       />
 
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Donde destacar */}
+        {/* Niveles */}
         <section>
           <h2 className="text-lg font-semibold tracking-tight">
-            Elige donde quieres destacar
+            Elige tu nivel
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Al mismo precio. Eliges el alcance al contratar el plan, segun donde
+            Mismo plan, dos alcances. Eliges el nivel al contratar, segun donde
             estan tus clientes.
           </p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            {SCOPES.map((scope) => (
-              <div key={scope.title} className="bg-card rounded-xl border p-5">
-                <scope.icon className="text-primary size-5" />
-                <p className="mt-3 font-medium">{scope.title}</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {scope.description}
-                </p>
-              </div>
-            ))}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {FEATURED_TIER_ORDER.map((id) => {
+              const t = FEATURED_TIERS[id];
+              return (
+                <div
+                  key={id}
+                  className={cn(
+                    "bg-card rounded-xl border p-5",
+                    t.recommended && "border-primary ring-primary/20 ring-1",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{t.name}</p>
+                    {t.recommended && (
+                      <Badge variant="success">
+                        <Sparkles className="size-3" />
+                        Recomendado
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-3">
+                    <span className="text-2xl font-semibold tracking-tight">
+                      {euro(t.base)}
+                    </span>{" "}
+                    <span className="text-muted-foreground text-sm">
+                      / año + IVA
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {euro(t.total)} IVA incluido (21%)
+                  </p>
+                  <p className="text-muted-foreground mt-2 text-sm">
+                    {t.tagline}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -221,15 +224,16 @@ export default async function DestacarPage() {
             </div>
             <div className="text-right">
               <div className="flex items-end gap-2">
+                <span className="text-muted-foreground pb-1 text-sm">desde</span>
                 <span className="text-3xl font-semibold tracking-tight">
-                  {euro(FEATURED_PRICE.base)}
+                  {euro(FEATURED_TIERS.REGIONAL.base)}
                 </span>
                 <span className="text-muted-foreground pb-1 text-sm">
                   / año + IVA
                 </span>
               </div>
               <p className="text-muted-foreground text-xs">
-                {euro(FEATURED_PRICE.total)} IVA incluido (21%)
+                Nacional {euro(FEATURED_TIERS.NACIONAL.base)} / año + IVA
               </p>
             </div>
           </div>

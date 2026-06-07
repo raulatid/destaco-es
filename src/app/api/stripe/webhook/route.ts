@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { SubscriptionStatus } from "@prisma/client";
+import type { FeaturedScope, SubscriptionStatus } from "@prisma/client";
 import type Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
@@ -53,6 +53,13 @@ async function syncSubscription(sub: Stripe.Subscription) {
   const customerId =
     typeof sub.customer === "string" ? sub.customer : sub.customer.id;
 
+  // Alcance del destacado elegido al contratar (viaja en la metadata).
+  const scopeRaw = sub.metadata?.featuredScope;
+  const featuredScope: FeaturedScope | undefined =
+    scopeRaw === "NACIONAL" || scopeRaw === "PROVINCIAL" || scopeRaw === "LOCAL"
+      ? scopeRaw
+      : undefined;
+
   // Si la empresa fue borrada, no hacemos nada (evita fallo de FK).
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -87,6 +94,7 @@ async function syncSubscription(sub: Stripe.Subscription) {
     data: {
       featured: isActive,
       featuredUntil: isActive ? periodEnd : null,
+      ...(featuredScope ? { featuredScope } : {}),
     },
   });
 }

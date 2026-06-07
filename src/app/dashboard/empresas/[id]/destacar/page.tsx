@@ -10,20 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getCompanyBilling } from "@/lib/data/dashboard";
-import { FEATURED_PRICE } from "@/lib/stripe";
-import { FEATURED_SCOPE_LABEL } from "@/lib/utils";
+import { euro, FEATURED_TIERS, tierForScope } from "@/lib/plans";
 
 const BENEFITS = [
-  "Posicion destacada en tu categoria, a nivel nacional, provincial o local",
-  "Tu eliges donde destacar: toda España, tu provincia o tu ciudad",
+  "Posicion destacada en tu categoria: a nivel regional o nacional",
+  "Tu eliges el alcance: tu provincia (Regional) o toda España (Nacional)",
   "Insignia «Destacado» en tu perfil y en los listados",
   "Mas visibilidad, mas visitas y mas leads",
   "Estadisticas avanzadas de rendimiento",
   "Soporte prioritario",
 ];
-
-const euro = (n: number) =>
-  new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES", { dateStyle: "long" }) : null;
@@ -93,7 +89,7 @@ export default async function DestacarPage({
             </Badge>
             {billing.featuredScope && (
               <Badge variant="outline">
-                {FEATURED_SCOPE_LABEL[billing.featuredScope]}
+                {FEATURED_TIERS[tierForScope(billing.featuredScope)].name}
               </Badge>
             )}
             {renewsOn && (
@@ -105,7 +101,7 @@ export default async function DestacarPage({
           <p className="mt-3 text-sm">
             Tu empresa esta <strong>destacada</strong>
             {billing.featuredScope
-              ? ` (${FEATURED_SCOPE_LABEL[billing.featuredScope].toLowerCase()})`
+              ? ` (${FEATURED_TIERS[tierForScope(billing.featuredScope)].name})`
               : ""}
             . Desde el portal puedes actualizar tu metodo de pago, descargar tus
             facturas o cancelar la renovacion.
@@ -135,15 +131,17 @@ export default async function DestacarPage({
             </div>
             <div className="text-right">
               <div className="flex items-end gap-2">
+                <span className="text-muted-foreground pb-1 text-sm">desde</span>
                 <span className="text-3xl font-semibold tracking-tight">
-                  {euro(FEATURED_PRICE.base)}
+                  {euro(FEATURED_TIERS.REGIONAL.base)}
                 </span>
                 <span className="text-muted-foreground pb-1 text-sm">
                   / año + IVA
                 </span>
               </div>
               <p className="text-muted-foreground text-xs">
-                {euro(FEATURED_PRICE.total)} IVA incluido (21%)
+                Nacional {euro(FEATURED_TIERS.NACIONAL.base)} / año + IVA · elige
+                el nivel abajo
               </p>
             </div>
           </div>

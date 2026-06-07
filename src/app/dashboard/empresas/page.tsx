@@ -2,12 +2,14 @@ import Link from "next/link";
 import type { CompanyStatus } from "@prisma/client";
 import { Building2, Plus, Sparkles } from "lucide-react";
 
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getMyCompanies } from "@/lib/data/dashboard";
 import { formatCompact } from "@/lib/utils";
+import { deleteCompany } from "./actions";
 
 const STATUS_META: Record<
   CompanyStatus,
@@ -104,6 +106,7 @@ export default async function MisEmpresasPage() {
                       {company.featured ? "Gestionar" : "Destacar"}
                     </Link>
                   </Button>
+                  <ConfirmDeleteButton action={deleteCompany} id={company.id} />
                 </div>
               </div>
             );

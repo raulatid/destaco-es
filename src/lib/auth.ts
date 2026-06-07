@@ -8,6 +8,23 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 
 /**
+ * Lista de correos con acceso de administrador. Quien inicie sesion con uno de
+ * estos emails obtiene el rol ADMIN automaticamente (aunque en la BD figure
+ * como USER). Se puede ampliar con la variable de entorno ADMIN_EMAILS
+ * (separada por comas) sin tocar el codigo.
+ */
+export const ADMIN_EMAILS: ReadonlySet<string> = new Set(
+  ["rauldiaztapia@gmail.com", ...(process.env.ADMIN_EMAILS ?? "").split(",")]
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+/** True si el email pertenece a la lista de administradores. */
+export function isAdminEmail(email?: string | null): boolean {
+  return Boolean(email) && ADMIN_EMAILS.has(email!.toLowerCase());
+}
+
+/**
  * Configuracion de Auth.js v5.
  * Proveedores: Google OAuth + email/password (Credentials).
  * Sesiones JWT (necesario para el proveedor Credentials).
@@ -56,6 +73,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id as string;
         token.role = (user as { role?: UserRole }).role ?? "USER";
+      }
+      // Eleva a ADMIN si el correo esta en la lista (vale tambien para sesiones
+      // ya existentes: se aplica en cada refresco del token).
+      if (isAdminEmail(token.email)) {
+        token.role = "ADMIN";
       }
       return token;
     },

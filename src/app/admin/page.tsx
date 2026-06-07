@@ -1,11 +1,48 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
-import { getAdminStats } from "@/lib/data/admin";
+import { TrendCard } from "@/components/admin/trend-chart";
+import { getAdminStats, getAdminTrends } from "@/lib/data/admin";
 import { formatCompact } from "@/lib/utils";
 
 export default async function AdminOverviewPage() {
-  const stats = await getAdminStats();
+  const [stats, trends] = await Promise.all([
+    getAdminStats(),
+    getAdminTrends(),
+  ]);
+
+  const kpis = [
+    {
+      label: "Altas manuales de empresas",
+      value: stats.manualCompanies,
+      sub: "Empresas creadas por usuarios",
+      data: trends.manualCompanies,
+      href: "/admin/empresas",
+    },
+    {
+      label: "Perfiles reclamados",
+      value: stats.claims,
+      sub: `${formatCompact(stats.approvedClaims)} aprobadas`,
+      data: trends.claims,
+      href: "/admin/reclamaciones",
+    },
+    {
+      label: "Usuarios registrados",
+      value: stats.users,
+      sub: "Cuentas creadas en Destaco",
+      data: trends.users,
+    },
+    {
+      label: "Usuarios pagando",
+      value: stats.payingUsers,
+      sub: `${formatCompact(stats.payingCompanies)} ${
+        stats.payingCompanies === 1
+          ? "empresa destacada"
+          : "empresas destacadas"
+      }`,
+      data: trends.payingCompanies,
+    },
+  ];
 
   const cards: { label: string; value: number; href?: string }[] = [
     { label: "Empresas totales", value: stats.total },
@@ -44,7 +81,20 @@ export default async function AdminOverviewPage() {
         Estado general del directorio Destaco.es.
       </p>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <h2 className="mt-8 text-sm font-semibold tracking-tight">
+        Negocio
+        <span className="text-muted-foreground ml-2 font-normal">
+          ultimos 12 meses
+        </span>
+      </h2>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {kpis.map((kpi) => (
+          <TrendCard key={kpi.label} {...kpi} />
+        ))}
+      </div>
+
+      <h2 className="mt-8 text-sm font-semibold tracking-tight">Directorio</h2>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => {
           const inner = (
             <>

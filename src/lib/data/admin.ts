@@ -3,6 +3,20 @@ import type { ClaimStatus, CompanyStatus, ReviewStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { withFallback } from "./db";
 
+/** Suscripciones que cuentan como "de pago" activas. */
+const PAYING_STATUSES = ["ACTIVE", "TRIALING"] as const;
+
+/**
+ * Una empresa cuenta como "alta manual" cuando la creo un usuario desde el
+ * panel (source = CLAIMED) y NO procede de una reclamacion de una ficha que ya
+ * existia (no tiene filas en CompanyClaim). Asi separamos las altas nuevas de
+ * las reclamaciones de perfiles importados.
+ */
+const MANUAL_COMPANY_WHERE = {
+  source: "CLAIMED",
+  claims: { none: {} },
+} as const;
+
 export interface AdminStats {
   total: number;
   draft: number;
@@ -11,21 +25,56 @@ export interface AdminStats {
   rejected: number;
   pendingReviews: number;
   jobs: number;
+  // Metricas de negocio
+  manualCompanies: number;
+  claims: number;
+  approvedClaims: number;
+  users: number;
+  payingCompanies: number;
+  payingUsers: number;
 }
 
 export function getAdminStats(): Promise<AdminStats> {
   return withFallback<AdminStats>(
     async () => {
-      const [total, draft, pending, published, rejected, pendingReviews, jobs] =
-        await Promise.all([
-          prisma.company.count(),
-          prisma.company.count({ where: { status: "DRAFT" } }),
-          prisma.company.count({ where: { status: "PENDING" } }),
-          prisma.company.count({ where: { status: "PUBLISHED" } }),
-          prisma.company.count({ where: { status: "REJECTED" } }),
-          prisma.review.count({ where: { status: "PENDING" } }),
-          prisma.ingestionJob.count(),
-        ]);
+      const [
+        total,
+        draft,
+        pending,
+        published,
+        rejected,
+        pendingReviews,
+        jobs,
+        manualCompanies,
+        claims,
+        approvedClaims,
+        users,
+        payingCompanies,
+        payingOwners,
+      ] = await Promise.all([
+        prisma.company.count(),
+        prisma.company.count({ where: { status: "DRAFT" } }),
+        prisma.company.count({ where: { status: "PENDING" } }),
+        prisma.company.count({ where: { status: "PUBLISHED" } }),
+        prisma.company.count({ where: { status: "REJECTED" } }),
+        prisma.review.count({ where: { status: "PENDING" } }),
+        prisma.ingestionJob.count(),
+        prisma.company.count({ where: MANUAL_COMPANY_WHERE }),
+        prisma.companyClaim.count(),
+        prisma.companyClaim.count({ where: { status: "APPROVED" } }),
+        prisma.user.count(),
+        prisma.subscription.count({
+          where: { status: { in: [...PAYING_STATUSES] } },
+        }),
+        prisma.company.findMany({
+          where: {
+            ownerId: { not: null },
+            subscription: { status: { in: [...PAYING_STATUSES] } },
+          },
+          select: { ownerId: true },
+          distinct: ["ownerId"],
+        }),
+      ]);
       return {
         total,
         draft,
@@ -34,6 +83,12 @@ export function getAdminStats(): Promise<AdminStats> {
         rejected,
         pendingReviews,
         jobs,
+        manualCompanies,
+        claims,
+        approvedClaims,
+        users,
+        payingCompanies,
+        payingUsers: payingOwners.length,
       };
     },
     () => ({
@@ -44,8 +99,159 @@ export function getAdminStats(): Promise<AdminStats> {
       rejected: 0,
       pendingReviews: 0,
       jobs: 0,
+      manualCompanies: 0,
+      claims: 0,
+      approvedClaims: 0,
+      users: 0,
+      payingCompanies: 0,
+      payingUsers: 0,
     }),
   );
+}
+
+// ------------------------------------------------------------
+// SERIES TEMPORALES (para las graficas de seguimiento del panel)
+// ------------------------------------------------------------
+
+export interface TrendPoint {
+  /** Clave de mes "YYYY-MM". */
+  month: string;
+  /** Etiqueta corta del mes ("ene", "feb"...). */
+  label: string;
+  /** Valor acumulado hasta el final de ese mes. */
+  value: number;
+}
+
+export interface AdminTrends {
+  manualCompanies: TrendPoint[];
+  claims: TrendPoint[];
+  users: TrendPoint[];
+  payingCompanies: TrendPoint[];
+}
+
+const MONTH_LABELS = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+] as const;
+
+const TREND_MONTHS = 12;
+
+/** Ventana de los ultimos {@link TREND_MONTHS} meses (en UTC, dia 1 de cada mes). */
+function monthBuckets(): { key: string; start: Date; label: string }[] {
+  const now = new Date();
+  const base = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+  const out: { key: string; start: Date; label: string }[] = [];
+  for (let i = TREND_MONTHS - 1; i >= 0; i--) {
+    const d = new Date(base);
+    d.setUTCMonth(d.getUTCMonth() - i);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    out.push({ key, start: d, label: MONTH_LABELS[d.getUTCMonth()] });
+  }
+  return out;
+}
+
+/** Convierte recuentos mensuales + base previa en una serie acumulada. */
+function cumulative(
+  monthly: { ym: string; n: number }[],
+  baseline: number,
+  buckets: { key: string; start: Date; label: string }[],
+): TrendPoint[] {
+  const map = new Map(monthly.map((m) => [m.ym, Number(m.n)]));
+  let running = baseline;
+  return buckets.map((b) => {
+    running += map.get(b.key) ?? 0;
+    return { month: b.key, label: b.label, value: running };
+  });
+}
+
+type MonthlyRow = { ym: string; n: number };
+
+/**
+ * Series de seguimiento (acumuladas) de los ultimos 12 meses para las 4
+ * metricas de negocio: altas manuales, reclamaciones de perfil, usuarios
+ * registrados y empresas de pago. Cada punto es el total acumulado a fin de mes.
+ */
+export function getAdminTrends(): Promise<AdminTrends> {
+  const empty: AdminTrends = {
+    manualCompanies: [],
+    claims: [],
+    users: [],
+    payingCompanies: [],
+  };
+
+  return withFallback<AdminTrends>(async () => {
+    const buckets = monthBuckets();
+    const since = buckets[0].start;
+
+    const [
+      manualBase,
+      claimsBase,
+      usersBase,
+      payingBase,
+      manualMonthly,
+      claimsMonthly,
+      usersMonthly,
+      payingMonthly,
+    ] = await Promise.all([
+      prisma.company.count({
+        where: { ...MANUAL_COMPANY_WHERE, createdAt: { lt: since } },
+      }),
+      prisma.companyClaim.count({ where: { createdAt: { lt: since } } }),
+      prisma.user.count({ where: { createdAt: { lt: since } } }),
+      prisma.subscription.count({
+        where: {
+          status: { in: [...PAYING_STATUSES] },
+          createdAt: { lt: since },
+        },
+      }),
+      prisma.$queryRaw<MonthlyRow[]>`
+        SELECT to_char(date_trunc('month', c."createdAt"), 'YYYY-MM') AS ym,
+               count(*)::int AS n
+        FROM "Company" c
+        WHERE c."createdAt" >= ${since}
+          AND c."source" = 'CLAIMED'
+          AND NOT EXISTS (
+            SELECT 1 FROM "CompanyClaim" cc WHERE cc."companyId" = c."id"
+          )
+        GROUP BY 1`,
+      prisma.$queryRaw<MonthlyRow[]>`
+        SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS ym,
+               count(*)::int AS n
+        FROM "CompanyClaim"
+        WHERE "createdAt" >= ${since}
+        GROUP BY 1`,
+      prisma.$queryRaw<MonthlyRow[]>`
+        SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS ym,
+               count(*)::int AS n
+        FROM "User"
+        WHERE "createdAt" >= ${since}
+        GROUP BY 1`,
+      prisma.$queryRaw<MonthlyRow[]>`
+        SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS ym,
+               count(*)::int AS n
+        FROM "Subscription"
+        WHERE "createdAt" >= ${since}
+          AND "status" IN ('ACTIVE', 'TRIALING')
+        GROUP BY 1`,
+    ]);
+
+    return {
+      manualCompanies: cumulative(manualMonthly, manualBase, buckets),
+      claims: cumulative(claimsMonthly, claimsBase, buckets),
+      users: cumulative(usersMonthly, usersBase, buckets),
+      payingCompanies: cumulative(payingMonthly, payingBase, buckets),
+    };
+  }, () => empty);
 }
 
 export interface AdminCompanyRow {

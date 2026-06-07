@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { CompanyStatus } from "@prisma/client";
 
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { listAdminCompanies } from "@/lib/data/admin";
 import { cn } from "@/lib/utils";
-import { approveCompany, rejectCompany } from "./actions";
+import { approveCompany, deleteCompany, rejectCompany } from "./actions";
 
 const VALID: CompanyStatus[] = [
   "DRAFT",
@@ -126,6 +127,7 @@ export default async function AdminEmpresasPage({
                       </Button>
                     </form>
                   )}
+                  <ConfirmDeleteButton action={deleteCompany} id={company.id} />
                 </div>
               </div>
             );

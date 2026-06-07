@@ -7,17 +7,31 @@ import { JsonLd } from "@/components/json-ld";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { LEGAL } from "@/lib/constants";
+import { euro, FEATURED_TIERS } from "@/lib/plans";
 import { buildMetadata, faqJsonLd, pricingFaqs } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Precios: plan Gratis y plan Destacado",
+  title: "Precios: plan Gratis, Destacado Regional y Nacional",
   description:
-    "Aparece gratis en el directorio de empresas de España o destaca por encima del resto en tu sector con el plan Destacado por 49,99 € al año.",
+    "Aparece gratis en el directorio de empresas de España o destaca por encima del resto: plan Regional por 49,99 €/año (tu provincia) o Nacional por 99,99 €/año (toda España).",
   path: "/precios",
 });
 
-const PLANS = [
+type Plan = {
+  name: string;
+  price: string;
+  oldPrice?: string;
+  period: string;
+  priceNote?: string;
+  description: string;
+  features: readonly string[];
+  cta: string;
+  href: string;
+  featured: boolean;
+};
+
+const PLANS: Plan[] = [
   {
     name: "Gratis",
     price: "0 €",
@@ -36,26 +50,42 @@ const PLANS = [
     featured: false,
   },
   {
-    name: "Destacado",
-    price: "49,99 €",
-    oldPrice: "100 €",
+    name: "Destacado Regional",
+    price: euro(FEATURED_TIERS.REGIONAL.base),
     period: "al año + IVA",
-    priceNote: "60,49 € IVA incluido (21%)",
-    description: "Aparece por encima del resto y consigue mas clientes.",
+    priceNote: `${euro(FEATURED_TIERS.REGIONAL.total)} IVA incluido (21%)`,
+    description: "Posiciónate en tu nicho a nivel regional, en toda tu provincia.",
     features: [
       "Todo lo incluido en el plan Gratis",
-      "Posicion destacada en tu categoria, a nivel nacional, provincial o local",
-      "Tu eliges donde destacar: toda España, tu provincia o tu ciudad",
+      "Posicion destacada en tu categoria a nivel regional (tu provincia)",
       "Insignia «Destacado» en tu perfil y en los listados",
       "Mas visibilidad, mas visitas y mas leads",
       "Estadisticas avanzadas de rendimiento",
       "Soporte prioritario",
     ],
-    cta: "Destacar mi empresa",
+    cta: "Destacar a nivel regional",
+    href: "/destacar",
+    featured: false,
+  },
+  {
+    name: "Destacado Nacional",
+    price: euro(FEATURED_TIERS.NACIONAL.base),
+    period: "al año + IVA",
+    priceNote: `${euro(FEATURED_TIERS.NACIONAL.total)} IVA incluido (21%)`,
+    description: "Máxima visibilidad: destaca por encima del resto en toda España.",
+    features: [
+      "Todo lo incluido en el plan Regional",
+      "Posicion destacada a nivel nacional, en toda España",
+      "Maxima visibilidad en tu sector en todo el pais",
+      "Insignia «Destacado» en tu perfil y en los listados",
+      "Estadisticas avanzadas de rendimiento",
+      "Soporte prioritario",
+    ],
+    cta: "Destacar a nivel nacional",
     href: "/destacar",
     featured: true,
   },
-] as const;
+];
 
 export default function PreciosPage() {
   const faqs = pricingFaqs();
@@ -71,14 +101,14 @@ export default function PreciosPage() {
         meta={
           <span className="flex items-center gap-1.5">
             <Sparkles className="size-4" />
-            Oferta de lanzamiento: 49,99 €/año + IVA (60,49 € IVA incl., antes
-            100 €)
+            Destaca desde {euro(FEATURED_TIERS.REGIONAL.base)}/año + IVA
+            (regional) o {euro(FEATURED_TIERS.NACIONAL.base)}/año (nacional)
           </span>
         }
       />
 
       <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
           {PLANS.map((plan) => (
             <div
               key={plan.name}
@@ -110,13 +140,13 @@ export default function PreciosPage() {
                 <span className="text-muted-foreground pb-1 text-sm">
                   {plan.period}
                 </span>
-                {"oldPrice" in plan && plan.oldPrice && (
+                {plan.oldPrice && (
                   <span className="text-muted-foreground pb-1 text-sm line-through">
                     {plan.oldPrice}
                   </span>
                 )}
               </div>
-              {"priceNote" in plan && plan.priceNote && (
+              {plan.priceNote && (
                 <p className="text-muted-foreground mt-1 text-xs">
                   {plan.priceNote}
                 </p>

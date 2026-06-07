@@ -6,9 +6,29 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getStripe } from "@/lib/stripe";
 import { slugify } from "@/lib/utils";
 
 export type CompanyFormState = { error?: string };
+
+/**
+ * Cancela la suscripcion en Stripe (si la hay) antes de borrar la empresa, para
+ * que no se siga cobrando. Es best-effort: si Stripe falla, lo registramos pero
+ * no bloqueamos el borrado (la fila local Subscription se elimina en cascada).
+ */
+export async function cancelStripeSubscription(
+  stripeSubscriptionId: string | null | undefined,
+): Promise<void> {
+  if (!stripeSubscriptionId) return;
+  try {
+    await getStripe().subscriptions.cancel(stripeSubscriptionId);
+  } catch (error) {
+    console.error(
+      "[billing] no se pudo cancelar la suscripcion en Stripe:",
+      error,
+    );
+  }
+}
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -239,5 +259,35 @@ export async function updateCompany(
 
   revalidatePath("/dashboard/empresas");
   revalidatePath(`/empresa/${existing.slug}`);
+  redirect("/dashboard/empresas");
+}
+
+/**
+ * Elimina una empresa propiedad del usuario. Cancela antes la suscripcion de
+ * Stripe (si la hubiera) y borra la ficha; las filas hijas (imagenes, servicios,
+ * resenas, suscripcion, etc.) se eliminan en cascada por el esquema.
+ */
+export async function deleteCompany(formData: FormData): Promise<void> {
+  const session = await auth();
+  if (!session?.user) throw new Error("Debes iniciar sesion.");
+
+  const id = String(formData.get("id") ?? "");
+  const company = await prisma.company.findUnique({
+    where: { id },
+    select: {
+      ownerId: true,
+      slug: true,
+      subscription: { select: { stripeSubscriptionId: true } },
+    },
+  });
+  if (!company || company.ownerId !== session.user.id) {
+    throw new Error("No tienes permiso para eliminar esta empresa.");
+  }
+
+  await cancelStripeSubscription(company.subscription?.stripeSubscriptionId);
+  await prisma.company.delete({ where: { id } });
+
+  revalidatePath("/dashboard/empresas");
+  revalidatePath(`/empresa/${company.slug}`);
   redirect("/dashboard/empresas");
 }
