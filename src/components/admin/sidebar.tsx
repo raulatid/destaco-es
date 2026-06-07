@@ -10,6 +10,7 @@ import {
   Search,
   ShieldCheck,
   Star,
+  Users,
 } from "lucide-react";
 
 import { logout } from "@/lib/actions/auth";
@@ -19,6 +20,7 @@ const LINKS = [
   { href: "/admin", label: "Resumen", icon: LayoutDashboard },
   { href: "/admin/empresas", label: "Empresas", icon: Building2 },
   { href: "/admin/reclamaciones", label: "Reclamaciones", icon: ShieldCheck },
+  { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/resenas", label: "Resenas", icon: Star },
   { href: "/admin/ingesta", label: "Ingesta y jobs", icon: Database },
   { href: "/admin/seo", label: "SEO e indexacion", icon: Search },

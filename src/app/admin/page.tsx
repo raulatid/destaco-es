@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Inbox } from "lucide-react";
 
 import { TrendCard } from "@/components/admin/trend-chart";
 import { getAdminStats, getAdminTrends } from "@/lib/data/admin";
@@ -31,6 +31,7 @@ export default async function AdminOverviewPage() {
       value: stats.users,
       sub: "Cuentas creadas en Destaco",
       data: trends.users,
+      href: "/admin/usuarios",
     },
     {
       label: "Usuarios pagando",
@@ -126,7 +127,7 @@ export default async function AdminOverviewPage() {
           className="bg-card hover:border-foreground/20 mt-4 flex items-center gap-3 rounded-xl border p-5 transition-all hover:shadow-md"
         >
           <div className="bg-muted text-foreground grid size-10 shrink-0 place-items-center rounded-lg border">
-            <Sparkles className="size-5" />
+            <Inbox className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-medium">

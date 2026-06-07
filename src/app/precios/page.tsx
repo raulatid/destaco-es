@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 
 import { FaqSection } from "@/components/faq-section";
 import { JsonLd } from "@/components/json-ld";
@@ -99,8 +99,7 @@ export default function PreciosPage() {
         title="Planes y precios"
         description="Empieza gratis y, cuando quieras, destaca tu empresa por encima del resto en tu sector para conseguir mas trafico, leads y autoridad."
         meta={
-          <span className="flex items-center gap-1.5">
-            <Sparkles className="size-4" />
+          <span>
             Destaca desde {euro(FEATURED_TIERS.REGIONAL.base)}/año + IVA
             (regional) o {euro(FEATURED_TIERS.NACIONAL.base)}/año (nacional)
           </span>
@@ -120,8 +119,7 @@ export default function PreciosPage() {
               )}
             >
               {plan.featured && (
-                <span className="bg-primary text-primary-foreground absolute -top-3 left-7 inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold">
-                  <Sparkles className="size-3" />
+                <span className="bg-primary text-primary-foreground absolute -top-3 left-7 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
                   Recomendado
                 </span>
               )}

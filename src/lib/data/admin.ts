@@ -294,6 +294,43 @@ export function listAdminCompanies(
   );
 }
 
+export interface AdminUserRow {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  companyCount: number;
+  createdAt: string;
+}
+
+export function listAdminUsers(): Promise<AdminUserRow[]> {
+  return withFallback<AdminUserRow[]>(
+    async () => {
+      const rows = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          _count: { select: { ownedCompanies: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      });
+      return rows.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        companyCount: u._count.ownedCompanies,
+        createdAt: u.createdAt.toISOString(),
+      }));
+    },
+    () => [],
+  );
+}
+
 export interface AdminReviewRow {
   id: string;
   companyName: string;
