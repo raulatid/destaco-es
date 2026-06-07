@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CompanyStatus } from "@prisma/client";
-import { Building2, Plus, Sparkles } from "lucide-react";
+import { BadgeCheck, Building2, Plus } from "lucide-react";
 
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { EmptyState } from "@/components/empty-state";
@@ -68,7 +68,7 @@ export default async function MisEmpresasPage() {
                     <Badge variant={meta.variant}>{meta.label}</Badge>
                     {company.featured && (
                       <Badge variant="success">
-                        <Sparkles className="size-3" />
+                        <BadgeCheck className="size-3" />
                         Destacada
                       </Badge>
                     )}
@@ -102,7 +102,6 @@ export default async function MisEmpresasPage() {
                     variant={company.featured ? "ghost" : "brand"}
                   >
                     <Link href={`/dashboard/empresas/${company.id}/destacar`}>
-                      <Sparkles className="size-4" />
                       {company.featured ? "Gestionar" : "Destacar"}
                     </Link>
                   </Button>

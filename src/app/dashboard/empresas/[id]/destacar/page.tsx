@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BadgeCheck, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check } from "lucide-react";
 
 import {
   FeatureCheckout,
@@ -84,7 +84,7 @@ export default async function DestacarPage({
         <div className="bg-card mt-6 rounded-xl border p-6">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="success">
-              <Sparkles className="size-3" />
+              <BadgeCheck className="size-3" />
               Destacada
             </Badge>
             {billing.featuredScope && (

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { FeaturedScope } from "@prisma/client";
-import { ArrowRight, Check, CreditCard, Sparkles } from "lucide-react";
+import { ArrowRight, Check, CreditCard } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +42,6 @@ export function CheckoutButton({
           disabled={pending}
           className="w-full sm:w-auto"
         >
-          <Sparkles className="size-4" />
           {pending ? "Redirigiendo a la pasarela..." : label}
           <ArrowRight className="size-4" />
         </Button>
@@ -145,7 +144,6 @@ export function FeatureCheckout({
         disabled={pending}
         className="mt-5 w-full sm:w-auto"
       >
-        <Sparkles className="size-4" />
         {pending ? "Redirigiendo a la pasarela..." : "Destacar mi empresa"}
         <ArrowRight className="size-4" />
       </Button>

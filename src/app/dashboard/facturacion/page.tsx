@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CreditCard, Sparkles } from "lucide-react";
+import { BadgeCheck, CreditCard } from "lucide-react";
 
 import { PortalButton } from "@/components/dashboard/billing-buttons";
 import { EmptyState } from "@/components/empty-state";
@@ -78,7 +78,7 @@ export default async function FacturacionPage() {
                         <p className="font-medium">{b.companyName}</p>
                         {isActive ? (
                           <Badge variant="success">
-                            <Sparkles className="size-3" />
+                            <BadgeCheck className="size-3" />
                             Destacada
                           </Badge>
                         ) : (
@@ -120,7 +120,6 @@ export default async function FacturacionPage() {
                         <Link
                           href={`/dashboard/empresas/${b.companyId}/destacar`}
                         >
-                          <Sparkles className="size-4" />
                           Destacar mi empresa
                         </Link>
                       </Button>
