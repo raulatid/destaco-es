@@ -82,6 +82,11 @@ export async function startCheckout(
 
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
+      // Forzamos tarjeta como metodo de pago. Sin esto, Stripe usa los metodos
+      // "automaticos" configurados en el dashboard; si la cuenta no tiene
+      // ninguno activado para EUR, devuelve "No valid payment method types for
+      // this Checkout Session" y el checkout no llega a abrirse.
+      payment_method_types: ["card"],
       line_items: [
         {
           price: priceId,
