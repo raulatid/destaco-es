@@ -24,12 +24,27 @@ import { runIngestion, type IngestRunResult } from "./ingest-service";
 
 /** Minimo de fichas publicadas que queremos en cada par categoria x ciudad. */
 export const MIN_PER_PAIR = 3;
-/** Consultas (pares con hueco) que atacamos por ejecucion diaria. */
-const DAILY_QUERY_BUDGET = 40;
-/** Tope de fichas NUEVAS por ejecucion (controla coste de IA y tiempo). */
+/**
+ * Tope de fichas NUEVAS por DIA (sumando TODAS las ejecuciones del dia). El
+ * cron dispara /api/import varias veces (ver vercel.json) y cada pasada sigue
+ * creando hasta llegar a este tope; despues las pasadas restantes no hacen nada.
+ */
 const DAILY_NEW_CAP = 100;
 /** Candidatos a pedir a Google por consulta (dedup deja menos como nuevos). */
 const PER_QUERY_LIMIT = 16;
+/**
+ * Tiempo maximo (ms) que UNA ejecucion dedica a LANZAR consultas. La funcion
+ * /api/import tiene maxDuration=300 s; paramos de lanzar a los 170 s para que la
+ * ultima consulta (Google + IA + publicacion) termine sin que Vercel mate el
+ * proceso y deje un IngestionJob a medias en estado RUNNING.
+ */
+const RUN_TIME_BUDGET_MS = 170_000;
+/** Tope de consultas por ejecucion (protege la cuota de Google Places). */
+const MAX_QUERIES_PER_RUN = 40;
+/** Desplazamiento de la rotacion por dia sobre la lista de huecos. */
+const DAILY_ROTATION_STRIDE = 60;
+/** Antiguedad (ms) a partir de la cual un job RUNNING se considera colgado. */
+const STUCK_JOB_MS = 15 * 60_000;
 
 /**
  * Termino de busqueda por categoria. Es el nicho que la gente teclea en Google
@@ -45,19 +60,24 @@ const CATEGORY_QUERIES: { slug: string; noun: string }[] = CATEGORIES.map(
 const CITIES: string[] = [
   "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Malaga",
   "Murcia", "Palma", "Bilbao", "Alicante", "Cordoba", "Valladolid",
-  "Vigo", "Gijon", "Granada", "A Coruna", "Vitoria", "Elche",
+  "Vigo", "Gijon", "Granada", "A Coruna", "Vitoria-Gasteiz", "Elche",
   "Oviedo", "Pamplona", "Almeria", "San Sebastian", "Burgos", "Albacete",
   "Santander", "Castellon", "Logrono", "Badajoz", "Salamanca", "Huelva",
-  "Lleida", "Tarragona", "Leon", "Cadiz", "Jaen", "Tarrasa",
+  "Lleida", "Tarragona", "Leon", "Cadiz", "Jaen", "Terrassa",
 ];
 
 export type DailyImportResult =
-  | { ran: false; reason: string }
+  | { ran: false; reason: string; createdToday?: number }
   | {
       ran: true;
       queries: number;
       gaps: number;
+      /** Fichas creadas en ESTA ejecucion. */
       created: number;
+      /** Fichas creadas HOY sumando todas las ejecuciones (incluida esta). */
+      createdToday: number;
+      /** Por que paro la ejecucion: tope diario, presupuesto de tiempo o sin huecos. */
+      stop: "daily-cap" | "time-budget" | "query-cap" | "no-gaps";
       runs: IngestRunResult[];
       indexed: { indexNow: boolean; sitemap: boolean };
     };
@@ -102,9 +122,66 @@ async function findGaps(): Promise<{ query: string; slug: string }[]> {
   return gaps;
 }
 
+/** Medianoche de hoy (hora del servidor; en Vercel es UTC). */
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 /**
- * Ejecuta la importacion diaria si no se ha hecho ya hoy (control de cuota).
- * Pasa `force: true` para saltarte la comprobacion (uso manual desde admin).
+ * Marca como FAILED los jobs de import que llevan demasiado tiempo en RUNNING:
+ * son ejecuciones que Vercel corto al alcanzar el limite de la funcion. Asi el
+ * panel queda limpio y no se quedan "colgados" indefinidamente.
+ */
+async function cleanupStuckJobs(): Promise<void> {
+  try {
+    await prisma.ingestionJob.updateMany({
+      where: {
+        type: "INGEST",
+        source: "GOOGLE_PLACES",
+        status: "RUNNING",
+        createdAt: { lt: new Date(Date.now() - STUCK_JOB_MS) },
+      },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        error: "Interrumpido (limite de tiempo de la funcion)",
+      },
+    });
+  } catch (error) {
+    console.error("[import] no se pudieron limpiar jobs colgados:", error);
+  }
+}
+
+/** Fichas de Google creadas hoy (suma de todas las ejecuciones del dia). */
+function countCreatedToday(): Promise<number> {
+  return prisma.company.count({
+    where: { source: "GOOGLE_PLACES", createdAt: { gte: startOfToday() } },
+  });
+}
+
+/** Consultas ya intentadas hoy (para que varias pasadas no repitan trabajo). */
+async function queriesAttemptedToday(): Promise<Set<string>> {
+  const jobs = await prisma.ingestionJob.findMany({
+    where: {
+      type: "INGEST",
+      source: "GOOGLE_PLACES",
+      createdAt: { gte: startOfToday() },
+    },
+    select: { query: true },
+  });
+  return new Set(jobs.map((j) => j.query).filter((q): q is string => !!q));
+}
+
+/**
+ * Importacion diaria desde Google Places. Pensada para dispararse VARIAS veces
+ * al dia (Vercel Cron): cada pasada esta acotada en tiempo y va sumando fichas
+ * hasta alcanzar DAILY_NEW_CAP en total; despues las pasadas restantes son
+ * no-ops. Esto evita depender de una sola funcion de 300 s para crear 100
+ * fichas (lo que solo permitia ~25/dia) y elimina los jobs colgados.
+ *
+ * Pasa `force: true` para saltarte el tope diario (uso manual desde admin).
  */
 export async function runDailyGoogleImport(
   force = false,
@@ -113,52 +190,60 @@ export async function runDailyGoogleImport(
     return { ran: false, reason: "Falta GOOGLE_PLACES_API_KEY" };
   }
 
-  if (!force) {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const alreadyRan = await prisma.ingestionJob.count({
-      where: {
-        source: "GOOGLE_PLACES",
-        type: "INGEST",
-        createdAt: { gte: startOfDay },
-        status: { in: ["RUNNING", "COMPLETED"] },
-      },
-    });
-    if (alreadyRan > 0) {
-      return { ran: false, reason: "Ya se ejecuto hoy (cuota diaria)" };
-    }
+  await cleanupStuckJobs();
+
+  const createdBefore = await countCreatedToday();
+  if (!force && createdBefore >= DAILY_NEW_CAP) {
+    return {
+      ran: false,
+      reason: "Tope diario ya alcanzado",
+      createdToday: createdBefore,
+    };
   }
 
   const gaps = await findGaps();
-
-  // Rotacion por dias: cada dia atacamos un tramo distinto de la lista de
-  // huecos, de forma que con el tiempo se cubren todos.
-  const selected: { query: string; slug: string }[] = [];
-  if (gaps.length > 0) {
-    const dayIndex = Math.floor(Date.now() / 86_400_000);
-    const start = (dayIndex * DAILY_QUERY_BUDGET) % gaps.length;
-    for (let i = 0; i < Math.min(DAILY_QUERY_BUDGET, gaps.length); i++) {
-      selected.push(gaps[(start + i) % gaps.length]);
-    }
+  if (gaps.length === 0) {
+    return { ran: false, reason: "No hay huecos que rellenar", createdToday: createdBefore };
   }
+
+  // Rotacion por dias: cada dia empezamos en un tramo distinto de la lista de
+  // huecos para cubrir todo el catalogo con el tiempo (y no atascarnos en pares
+  // que Google nunca llega a llenar). Dentro del mismo dia, descartamos las
+  // consultas ya intentadas para que las distintas pasadas avancen sin repetir.
+  const dayIndex = Math.floor(Date.now() / 86_400_000);
+  const offset = (dayIndex * DAILY_ROTATION_STRIDE) % gaps.length;
+  const rotated = [...gaps.slice(offset), ...gaps.slice(0, offset)];
+  const attempted = await queriesAttemptedToday();
+  const queue = rotated.filter((g) => !attempted.has(g.query));
 
   const runs: IngestRunResult[] = [];
   const createdSlugs: string[] = [];
+  const runStart = Date.now();
   let created = 0;
+  let queries = 0;
+  let stop: "daily-cap" | "time-budget" | "query-cap" | "no-gaps" = "no-gaps";
 
-  for (const { query, slug } of selected) {
-    if (created >= DAILY_NEW_CAP) break;
+  for (const { query, slug } of queue) {
+    if (createdBefore + created >= DAILY_NEW_CAP) {
+      stop = "daily-cap";
+      break;
+    }
+    if (Date.now() - runStart > RUN_TIME_BUDGET_MS) {
+      stop = "time-budget";
+      break;
+    }
+    if (queries >= MAX_QUERIES_PER_RUN) {
+      stop = "query-cap";
+      break;
+    }
+
     const result = await runIngestion(
-      {
-        source: "GOOGLE_PLACES",
-        query,
-        limit: PER_QUERY_LIMIT,
-        categorySlug: slug,
-      },
+      { source: "GOOGLE_PLACES", query, limit: PER_QUERY_LIMIT, categorySlug: slug },
       // Publicacion automatica: enriquecer con IA y publicar el mismo dia.
       { autoEnrich: true, autoPublish: true },
     );
     runs.push(result);
+    queries++;
     created += result.stats.created;
     createdSlugs.push(...result.createdSlugs);
   }
@@ -176,9 +261,11 @@ export async function runDailyGoogleImport(
 
   return {
     ran: true,
-    queries: selected.length,
+    queries,
     gaps: gaps.length,
     created,
+    createdToday: createdBefore + created,
+    stop,
     runs,
     indexed: { indexNow, sitemap },
   };

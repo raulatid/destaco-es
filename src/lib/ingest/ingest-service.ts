@@ -37,8 +37,39 @@ export interface IngestOptions {
   autoPublish?: boolean;
 }
 
-/** Fichas que se enriquecen con IA a la vez (limita carga y rate limit OpenAI). */
-const ENRICH_CONCURRENCY = 6;
+/**
+ * Fichas que se enriquecen con IA a la vez. Mas concurrencia = menos lotes y
+ * menos tiempo total por consulta (clave para que el import diario alcance el
+ * tope dentro del limite de la funcion). Configurable por entorno; 12 equilibra
+ * velocidad con el rate limit de OpenAI y el pool de conexiones de Postgres.
+ */
+const ENRICH_CONCURRENCY = Math.max(
+  1,
+  Number(process.env.ENRICH_CONCURRENCY) || 16,
+);
+
+/** Tope duro por ficha: si el enriquecimiento se atasca, no bloquea el lote. */
+const ENRICH_TIMEOUT_MS = 60_000;
+
+/** Rechaza si `promise` no resuelve en `ms` (best-effort: la ficha se publica igual). */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`Timeout (${ms} ms) en ${label}`)),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 export interface IngestRunResult {
   jobId: string;
@@ -291,7 +322,9 @@ export async function runIngestion(
       for (let i = 0; i < createdIds.length; i += ENRICH_CONCURRENCY) {
         const batch = createdIds.slice(i, i + ENRICH_CONCURRENCY);
         const results = await Promise.allSettled(
-          batch.map((id) => enrichCompany(id)),
+          batch.map((id) =>
+            withTimeout(enrichCompany(id), ENRICH_TIMEOUT_MS, `enrich ${id}`),
+          ),
         );
         for (const r of results) {
           if (r.status === "rejected") {

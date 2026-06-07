@@ -80,6 +80,9 @@ export async function enrichCompanyData(
   const completion = await client.chat.completions.create({
     model: OPENAI_MODEL,
     temperature: 0.7,
+    // El JSON completo cabe de sobra en ~1400 tokens; acotar la salida estabiliza
+    // la latencia (y el coste) de cada llamada en el import diario por lotes.
+    max_tokens: 1400,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },

@@ -17,9 +17,10 @@ function authorized(req: NextRequest): boolean {
 }
 
 /**
- * Importacion diaria desde Google Places (la dispara Vercel Cron).
- * Trae 20 fichas nuevas con control de cuota: una vez al dia como maximo.
- * Usa ?force=1 para forzar una ejecucion manual desde el admin.
+ * Importacion diaria desde Google Places (la dispara Vercel Cron varias veces
+ * por la madrugada; ver vercel.json). Cada pasada esta acotada en tiempo y va
+ * sumando fichas hasta el tope diario (DAILY_NEW_CAP); las pasadas sobrantes no
+ * hacen nada. Usa ?force=1 para forzar una pasada manual desde el admin.
  */
 export async function GET(req: NextRequest) {
   if (!authorized(req)) {
