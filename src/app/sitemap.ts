@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { SITE } from "@/lib/constants";
+import { CATEGORIES, SITE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { MIN_ITEMS_FOR_INDEX } from "@/lib/seo/seo-pages";
 
@@ -49,6 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: at("/"), lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: at("/categorias"), lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: at("/guias"), lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: at("/empresas"), lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: at("/provincias"), lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: at("/precios"), lastModified: now, changeFrequency: "monthly", priority: 0.5 },
@@ -94,6 +95,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
+  // Guias editoriales: una por categoria del catalogo. Son contenido unico de
+  // fondo (no listados), asi que siempre son indexables, exista o no inventario.
+  const guideRoutes: MetadataRoute.Sitemap = CATEGORIES.map((c) => ({
+    url: at(`/guias/${c.slug}`),
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   // Una URL por empresa.
   const companyRoutes: MetadataRoute.Sitemap = companies.map((company) => ({
     url: at(`/empresa/${company.slug}`),
@@ -107,6 +117,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryRoutes,
     ...provinceRoutes,
     ...landingRoutes,
+    ...guideRoutes,
     ...companyRoutes,
   ];
 }

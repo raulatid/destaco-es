@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Building2, MapPin } from "lucide-react";
+import { ArrowRight, BookOpen, Building2, MapPin } from "lucide-react";
 
 import { CompanyGrid } from "@/components/company-grid";
 import { FaqSection } from "@/components/faq-section";
@@ -124,11 +124,21 @@ export default async function CategoryPage({
       />
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <section className="text-muted-foreground mb-10 max-w-3xl space-y-3 text-[15px] leading-relaxed">
+        <section className="text-muted-foreground mb-6 max-w-3xl space-y-3 text-[15px] leading-relaxed">
           {intro.map((paragraph, i) => (
             <p key={i}>{paragraph}</p>
           ))}
         </section>
+        <Link
+          href={`/guias/${categoria}`}
+          className="group bg-card hover:border-foreground/20 mb-10 flex max-w-3xl items-center gap-3 rounded-xl border p-4 transition-colors"
+        >
+          <BookOpen className="text-muted-foreground group-hover:text-foreground size-5 shrink-0 transition-colors" />
+          <span className="text-sm font-medium">
+            Guia: como elegir {noun} (que mirar, precios y errores)
+          </span>
+          <ArrowRight className="text-muted-foreground ml-auto size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+        </Link>
         {subcategories.length > 0 && (
           <section className="mb-10">
             <h2 className="text-xl font-semibold tracking-tight">

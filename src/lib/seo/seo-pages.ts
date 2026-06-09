@@ -78,6 +78,16 @@ export async function syncSeoPages(): Promise<SeoSyncResult> {
       itemCount: c.companyCount,
       indexable: c.companyCount >= MIN_ITEMS_FOR_INDEX,
     });
+    // Guia editorial de la categoria: contenido unico de fondo, siempre
+    // indexable (no depende del inventario de empresas).
+    drafts.push({
+      path: `/guias/${c.slug}`,
+      kind: "guide",
+      title: `Como elegir ${categoryNoun(c.slug, c.name)}`,
+      categoryId: c.id,
+      itemCount: c.companyCount,
+      indexable: true,
+    });
   }
 
   for (const p of provinces) {

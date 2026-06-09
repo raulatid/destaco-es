@@ -1735,5 +1735,6 @@ export const NAV_LINKS = [
   { label: "Categorias", href: "/categorias" },
   { label: "Empresas", href: "/empresas" },
   { label: "Provincias", href: "/provincias" },
+  { label: "Guias", href: "/guias" },
   { label: "Precios", href: "/precios" },
 ] as const;

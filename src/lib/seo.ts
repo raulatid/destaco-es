@@ -557,3 +557,26 @@ export function itemListJsonLd(
     })),
   };
 }
+
+/** JSON-LD Article — para las guias editoriales (/guias/[categoria]). */
+export function articleJsonLd(opts: {
+  title: string;
+  description: string;
+  path: string;
+}) {
+  const publisher = {
+    "@type": "Organization",
+    name: SITE.name,
+    url: SITE.url,
+  };
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: opts.title,
+    description: opts.description,
+    inLanguage: "es-ES",
+    author: publisher,
+    publisher,
+    mainEntityOfPage: absolute(opts.path),
+  };
+}
