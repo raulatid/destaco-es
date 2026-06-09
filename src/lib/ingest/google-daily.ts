@@ -56,14 +56,47 @@ const CATEGORY_QUERIES: { slug: string; noun: string }[] = CATEGORIES.map(
   (c) => ({ slug: c.slug, noun: c.noun }),
 );
 
-/** Ciudades objetivo (capitales y grandes nucleos). Amplia cobertura nacional. */
+/**
+ * Ciudades objetivo: los mayores municipios de España (capitales + grandes
+ * nucleos y areas metropolitanas), para maxima cobertura long-tail. Cada par
+ * categoria x ciudad es una landing programatica ("fontaneros en Mostoles").
+ * Ampliar esta lista multiplica directamente las URLs indexables; el importador
+ * las detecta como huecos y las rellena solo (no hace falta sembrarlas: las
+ * ciudades se crean al vuelo desde la direccion real de Google Places).
+ */
 const CITIES: string[] = [
+  // Capitales y grandes nucleos
   "Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza", "Malaga",
   "Murcia", "Palma", "Bilbao", "Alicante", "Cordoba", "Valladolid",
   "Vigo", "Gijon", "Granada", "A Coruna", "Vitoria-Gasteiz", "Elche",
   "Oviedo", "Pamplona", "Almeria", "San Sebastian", "Burgos", "Albacete",
   "Santander", "Castellon", "Logrono", "Badajoz", "Salamanca", "Huelva",
   "Lleida", "Tarragona", "Leon", "Cadiz", "Jaen", "Terrassa",
+  // Ampliacion nacional (grandes municipios y areas metropolitanas)
+  "Las Palmas de Gran Canaria", "Santa Cruz de Tenerife", "L'Hospitalet de Llobregat",
+  "Badalona", "Cartagena", "Jerez de la Frontera",
+  "Sabadell", "Mostoles", "Alcala de Henares", "Fuenlabrada", "Getafe",
+  "San Cristobal de La Laguna",
+  "Leganes", "Santiago de Compostela", "Marbella", "Alcorcon", "Dos Hermanas",
+  "Torrejon de Ardoz",
+  "Mataro", "Parla", "Algeciras", "Alcobendas", "Reus", "Santa Coloma de Gramenet",
+  "Ourense", "Telde", "Barakaldo", "Lugo", "Girona", "Caceres",
+  "Lorca", "San Fernando", "Roquetas de Mar", "El Ejido", "Rivas-Vaciamadrid",
+  "Las Rozas de Madrid",
+  "San Sebastian de los Reyes", "El Puerto de Santa Maria", "Torrevieja",
+  "Cornella de Llobregat", "Sant Cugat del Valles", "Torrent",
+  "Orihuela", "Chiclana de la Frontera", "Toledo", "Pozuelo de Alarcon",
+  "Guadalajara", "Mijas",
+  "Sant Boi de Llobregat", "Talavera de la Reina", "Fuengirola", "Velez-Malaga",
+  "Pontevedra", "Rubi",
+  "Coslada", "Manresa", "Getxo", "Torremolinos", "Benalmadena", "Aviles",
+  "Palencia", "Ciudad Real", "Gandia", "Benidorm", "Majadahonda", "Sagunto",
+  "Paterna", "Molina de Segura", "Alcala de Guadaira", "Ferrol", "Ponferrada",
+  "Sanlucar de Barrameda",
+  "Estepona", "Viladecans", "El Prat de Llobregat", "Castelldefels", "Granollers",
+  "Cerdanyola del Valles",
+  "Irun", "Vilanova i la Geltru", "Arona", "Motril", "Merida", "Zamora",
+  "Segovia", "Cuenca", "Linares", "Utrera", "Aranjuez", "Collado Villalba",
 ];
 
 export type DailyImportResult =
