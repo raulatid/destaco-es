@@ -1690,6 +1690,23 @@ export function childCategories(parentSlug: string): Category[] {
   return SUBCATEGORIES_BY_PARENT[parentSlug] ?? [];
 }
 
+/**
+ * Categorias afines a una dada, para enlazado interno relevante (refuerza el
+ * grafo de enlaces, reparte autoridad y capta long-tail vecino):
+ *  - Si es SUBCATEGORIA: su madre + las hermanas (mismo padre).
+ *  - Si es de PRIMER NIVEL: sus propias subcategorias (nichos).
+ *  - Si es de primer nivel SIN nichos: vacio (no forzamos enlaces irrelevantes).
+ */
+export function relatedCategories(slug: string, limit = 10): Category[] {
+  const parent = CATEGORY_PARENT[slug];
+  if (parent) {
+    const parentCat = CATEGORIES.find((c) => c.slug === parent);
+    const siblings = childCategories(parent).filter((c) => c.slug !== slug);
+    return [...(parentCat ? [parentCat] : []), ...siblings].slice(0, limit);
+  }
+  return childCategories(slug).slice(0, limit);
+}
+
 export type ProvinceMeta = { slug: string; name: string };
 
 export const TOP_PROVINCES: ProvinceMeta[] = [

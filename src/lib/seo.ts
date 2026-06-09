@@ -142,6 +142,134 @@ export function categoryFaqs(
   return faqs;
 }
 
+// ---- Texto introductorio unico por landing (anti "thin/duplicate content") --
+//
+// Las paginas programaticas (misma plantilla, distinta ciudad) corren el riesgo
+// de parecer contenido duplicado. Para evitarlo generamos parrafos con
+// VARIACION determinista: un hash del slug elige entre varias redacciones, y
+// ademas tejemos datos reales y unicos de cada pagina (numero de empresas,
+// provincia, empresa lider). Mismo slug => mismo texto (estable para ISR).
+
+/** Hash estable FNV-1a de una cadena -> entero sin signo de 32 bits. */
+function seedFromString(input: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/** Elige un elemento de `arr` de forma determinista a partir de una clave. */
+function pickVariant<T>(arr: T[], key: string): T {
+  return arr[seedFromString(key) % arr.length];
+}
+
+/** Compara dos nombres ignorando acentos y mayusculas. */
+const looseEq = (a: string, b: string): boolean => {
+  const norm = (s: string) =>
+    s
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase();
+  return norm(a) === norm(b);
+};
+
+/**
+ * Parrafos introductorios para la landing categoria+ciudad. Devuelve 2 parrafos
+ * con keywords (nicho + ciudad + provincia) y variacion por pagina, para dar
+ * cuerpo unico a cada landing y evitar el "thin/duplicate content".
+ */
+export function landingIntro(opts: {
+  noun: string;
+  cityName: string;
+  provinceName: string;
+  count: number;
+  topName?: string;
+  seedKey: string;
+}): string[] {
+  const { noun, cityName, provinceName, count, topName, seedKey } = opts;
+  const g = nounIsFeminine(noun) ? "a" : "o";
+  const art = nounArticle(noun, true); // los / las
+  const year = new Date().getFullYear();
+  const place = looseEq(cityName, provinceName)
+    ? cityName
+    : `${cityName}, en la provincia de ${provinceName},`;
+
+  const openers = [
+    `¿Buscas ${art} mejores ${noun} en ${cityName}? Has llegado al sitio indicado.`,
+    `Encontrar ${noun} de confianza en ${cityName} no tiene por que ser complicado.`,
+    `En esta guia reunimos ${art} ${noun} mejor valorad${g}s de ${cityName}.`,
+    `Comparar ${noun} en ${cityName} es facil con Destaco.`,
+  ];
+  const countBits =
+    count > 0
+      ? [
+          `Hemos reunido ${count} ${noun} en ${place} ordenad${g}s por las valoraciones reales de sus clientes y por nuestro indice de calidad.`,
+          `Ahora mismo listamos ${count} ${noun} en ${place} cada un${g} con sus opiniones, servicios y datos de contacto.`,
+          `Comparamos ${count} ${noun} de ${place} para que elijas con criterio: reseñas, servicios y precios en un mismo lugar.`,
+        ]
+      : [
+          `Estamos completando el listado de ${noun} en ${place} y lo ampliamos cada dia con nuevas fichas verificadas.`,
+        ];
+  const topBit =
+    topName && count > 0
+      ? [
+          ` Segun las valoraciones, ${topName} encabeza hoy el ranking.`,
+          ` A dia de hoy, ${topName} ocupa la primera posicion por puntuacion.`,
+          ` Entre tod${g}s destaca ${topName}, actualmente en lo mas alto del listado.`,
+        ]
+      : [""];
+
+  const p1 =
+    pickVariant(openers, `${seedKey}|op`) +
+    " " +
+    pickVariant(countBits, `${seedKey}|ct`) +
+    pickVariant(topBit, `${seedKey}|tp`);
+
+  const p2Variants = [
+    `Cada perfil incluye telefono, direccion, horario, servicios y opiniones verificadas, para que compares y contactes sin intermediarios ni comisiones. Revisamos la informacion a diario (${year}).`,
+    `Ordenamos ${art} ${noun} por reseñas reales, numero de opiniones y nuestro indice de calidad. Revisa cada ficha, pide presupuesto y contacta gratis, directamente con la empresa.`,
+    `Para acertar, fijate en la valoracion media, el numero de opiniones y los servicios de cada empresa. En Destaco contactas sin comisiones y la informacion se actualiza cada dia (${year}).`,
+  ];
+
+  return [p1, pickVariant(p2Variants, `${seedKey}|p2`)];
+}
+
+/** Parrafos introductorios para la landing nacional de una categoria. */
+export function categoryIntro(opts: {
+  noun: string;
+  count: number;
+  seedKey: string;
+}): string[] {
+  const { noun, count, seedKey } = opts;
+  const g = nounIsFeminine(noun) ? "a" : "o";
+  const art = nounArticle(noun, true);
+  const year = new Date().getFullYear();
+
+  const openers =
+    count > 0
+      ? [
+          `Directorio de ${art} mejores ${noun} de España: ${count} empresas comparables en un mismo lugar.`,
+          `Reunimos ${count} ${noun} de toda España, ordenad${g}s por valoraciones reales y por nuestro indice de calidad.`,
+          `Encuentra ${noun} de confianza en toda España: listamos ${count} empresas con opiniones y datos verificados.`,
+        ]
+      : [
+          `Estamos completando el directorio de ${noun} en España y lo ampliamos cada dia con nuevas fichas verificadas.`,
+        ];
+
+  const p2Variants = [
+    `Filtra por provincia o ciudad, compara servicios, precios y reseñas, y contacta gratis con cada empresa, sin intermediarios. Actualizamos el directorio a diario (${year}).`,
+    `Explora ${art} ${noun} por ciudad, revisa sus opiniones verificadas y solicita presupuesto sin compromiso desde cada ficha. Informacion revisada cada dia (${year}).`,
+    `¿Tienes una empresa del sector? Reclama tu perfil gratis o destaca por encima del resto en tu categoria y en cada ciudad. El directorio se actualiza a diario (${year}).`,
+  ];
+
+  return [
+    pickVariant(openers, `${seedKey}|op`),
+    pickVariant(p2Variants, `${seedKey}|p2`),
+  ];
+}
+
 /** FAQs generales de la home (que es Destaco, gratis, datos, contacto). */
 export function homeFaqs(): { question: string; answer: string }[] {
   return [

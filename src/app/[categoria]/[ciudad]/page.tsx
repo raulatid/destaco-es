@@ -12,7 +12,13 @@ import { SortControl } from "@/components/sort-control";
 import { getCategoryBySlug } from "@/lib/data/categories";
 import { listCompanies } from "@/lib/data/companies";
 import { getCityBySlug } from "@/lib/data/locations";
-import { bestNoun, categoryNoun, nounIsFeminine, TOP_CITIES } from "@/lib/constants";
+import {
+  bestNoun,
+  categoryNoun,
+  nounIsFeminine,
+  relatedCategories,
+  TOP_CITIES,
+} from "@/lib/constants";
 import { isSortOption } from "@/lib/ranking";
 import {
   breadcrumbJsonLd,
@@ -21,6 +27,7 @@ import {
   itemListJsonLd,
   landingDescription,
   landingFaqs,
+  landingIntro,
   landingTitle,
 } from "@/lib/seo";
 import { MIN_ITEMS_FOR_INDEX } from "@/lib/seo/seo-pages";
@@ -85,6 +92,15 @@ export default async function CategoryCityPage({
   const noun = categoryNoun(categoria, category.name);
   const g = nounIsFeminine(noun) ? "a" : "o";
   const faqs = landingFaqs(noun, city.name, result.total, result.items[0]?.name);
+  const intro = landingIntro({
+    noun,
+    cityName: city.name,
+    provinceName: city.province,
+    count: result.total,
+    topName: result.items[0]?.name,
+    seedKey: `${categoria}/${ciudad}`,
+  });
+  const related = relatedCategories(categoria, 8);
 
   return (
     <>
@@ -125,6 +141,11 @@ export default async function CategoryCityPage({
       />
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section className="text-muted-foreground mb-10 max-w-3xl space-y-3 text-[15px] leading-relaxed">
+          {intro.map((paragraph, i) => (
+            <p key={i}>{paragraph}</p>
+          ))}
+        </section>
         {result.items.length > 0 && (
           <div className="mb-6 flex justify-end">
             <SortControl value={sort} />
@@ -155,6 +176,25 @@ export default async function CategoryCityPage({
           className="mt-16"
         />
 
+        {related.length > 0 && (
+          <section className="mt-16">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Otros servicios en {city.name}
+            </h2>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {related.map((rc) => (
+                <Link
+                  key={rc.slug}
+                  href={`/${rc.slug}/${ciudad}`}
+                  className="border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground rounded-full border px-3.5 py-1.5 text-sm transition-colors"
+                >
+                  {categoryNoun(rc.slug, rc.name)} en {city.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mt-16">
           <h2 className="text-xl font-semibold tracking-tight">
             {bestNoun(noun)} en otras ciudades
@@ -170,6 +210,24 @@ export default async function CategoryCityPage({
               </Link>
             ))}
           </div>
+        </section>
+
+        <section className="text-muted-foreground mt-12 text-sm">
+          Tambien puedes consultar{" "}
+          <Link
+            href={`/${categoria}`}
+            className="text-foreground underline-offset-4 hover:underline"
+          >
+            {bestNoun(noun, true)} en toda España
+          </Link>{" "}
+          o el directorio de{" "}
+          <Link
+            href={`/provincias/${city.provinceSlug}`}
+            className="text-foreground underline-offset-4 hover:underline"
+          >
+            empresas en {city.province}
+          </Link>
+          .
         </section>
       </div>
     </>

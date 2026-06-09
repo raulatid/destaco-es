@@ -15,8 +15,10 @@ import { listCompanies } from "@/lib/data/companies";
 import {
   bestNoun,
   categoryNoun,
+  CATEGORY_PARENT,
   childCategories,
   nounIsFeminine,
+  relatedCategories,
   TOP_CITIES,
 } from "@/lib/constants";
 import { isSortOption } from "@/lib/ranking";
@@ -24,6 +26,7 @@ import {
   breadcrumbJsonLd,
   buildMetadata,
   categoryFaqs,
+  categoryIntro,
   faqJsonLd,
   itemListJsonLd,
 } from "@/lib/seo";
@@ -72,6 +75,14 @@ export default async function CategoryPage({
   const result = await listCompanies({ categorySlug: categoria, page, sort });
   const subcategories = childCategories(categoria);
   const faqs = categoryFaqs(noun, result.total);
+  const intro = categoryIntro({
+    noun,
+    count: result.total || category.companyCount,
+    seedKey: categoria,
+  });
+  // Solo para subcategorias: enlaza hacia la madre y las hermanas (las de
+  // primer nivel ya muestran sus nichos en "Especialidades").
+  const related = CATEGORY_PARENT[categoria] ? relatedCategories(categoria, 10) : [];
 
   return (
     <>
@@ -113,6 +124,11 @@ export default async function CategoryPage({
       />
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section className="text-muted-foreground mb-10 max-w-3xl space-y-3 text-[15px] leading-relaxed">
+          {intro.map((paragraph, i) => (
+            <p key={i}>{paragraph}</p>
+          ))}
+        </section>
         {subcategories.length > 0 && (
           <section className="mb-10">
             <h2 className="text-xl font-semibold tracking-tight">
@@ -190,6 +206,26 @@ export default async function CategoryPage({
             ))}
           </div>
         </section>
+
+        {related.length > 0 && (
+          <section className="mt-16">
+            <h2 className="text-xl font-semibold tracking-tight">
+              Categorias relacionadas
+            </h2>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {related.map((rc) => (
+                <Link
+                  key={rc.slug}
+                  href={`/${rc.slug}`}
+                  className="border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition-colors"
+                >
+                  <CategoryIcon name={rc.icon} className="size-3.5 shrink-0" />
+                  {rc.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </>
   );
