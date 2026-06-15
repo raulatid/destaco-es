@@ -5,6 +5,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { PromoBanner } from "@/components/layout/promo-banner";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { JsonLd } from "@/components/json-ld";
@@ -68,6 +69,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <PromoBanner />
             <SiteHeader />
             <main className="min-h-dvh">{children}</main>
             <SiteFooter />
