@@ -8,14 +8,14 @@ import {
   Star,
 } from "lucide-react";
 
+import { PrepaidCheckout } from "@/components/dashboard/billing-buttons";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getMyCompanies } from "@/lib/data/dashboard";
-import { euro, FEATURED_TIER_ORDER, FEATURED_TIERS } from "@/lib/plans";
+import { euro, FEATURED_TIERS } from "@/lib/plans";
 import { buildMetadata } from "@/lib/seo";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = buildMetadata({
   title: "Destaca tu empresa",
@@ -57,61 +57,27 @@ export default async function DestacarPage() {
       />
 
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Niveles */}
+        {/* Pago directo: primero pagas, luego asignas la empresa */}
         <section>
-          <h2 className="text-lg font-semibold tracking-tight">
-            Elige tu nivel
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Mismo plan, dos alcances. Eliges el nivel al contratar, segun donde
-            estan tus clientes.
-          </p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {FEATURED_TIER_ORDER.map((id) => {
-              const t = FEATURED_TIERS[id];
-              return (
-                <div
-                  key={id}
-                  className={cn(
-                    "bg-card rounded-xl border p-5",
-                    t.recommended && "border-primary ring-primary/20 ring-1",
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium">{t.name}</p>
-                    {t.recommended && (
-                      <Badge variant="success">
-                        <Star className="size-3" />
-                        Recomendado
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-end gap-x-2">
-                    <span className="text-2xl font-semibold tracking-tight">
-                      {euro(t.base)}
-                    </span>
-                    <span className="text-muted-foreground pb-0.5 text-sm line-through">
-                      {euro(t.base * 2)}
-                    </span>
-                    <span className="text-muted-foreground pb-0.5 text-sm">
-                      / año + IVA
-                    </span>
-                    <span className="bg-success/15 text-success ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold">
-                      -50%
-                    </span>
-                  </div>
-                  <p className="text-success mt-1 text-xs font-semibold">
-                    Oferta de lanzamiento: 50% de descuento
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {euro(t.total)} IVA incluido (21%)
-                  </p>
-                  <p className="text-muted-foreground mt-2 text-sm">
-                    {t.tagline}
-                  </p>
-                </div>
-              );
-            })}
+          <div className="border-primary/40 bg-card ring-primary/10 rounded-2xl border p-6 shadow-sm ring-1 sm:p-7">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold tracking-tight">
+                  Destácala ahora
+                </h2>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Elige el nivel y paga de forma segura en un minuto. Justo
+                  después eliges a qué empresa aplicar el destacado: una que ya
+                  tengas, una que reclames o una nueva.
+                </p>
+              </div>
+              <span className="bg-success/15 text-success inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold">
+                Oferta -50%
+              </span>
+            </div>
+            <div className="mt-6">
+              <PrepaidCheckout />
+            </div>
           </div>
         </section>
 

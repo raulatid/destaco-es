@@ -99,6 +99,86 @@ async function syncSubscription(sub: Stripe.Subscription) {
   });
 }
 
+/**
+ * Sincroniza un pago "Destacado" SIN empresa asociada (flujo pago-primero) en un
+ * PendingFeature. El cliente lo reclamara luego en /destacar/completar. Si el pago
+ * ya fue reclamado (status CLAIMED) no tocamos nada: manda la Subscription real.
+ */
+async function syncPendingFeature(
+  sub: Stripe.Subscription,
+  email: string | null,
+  sessionId: string | null,
+  opts: { canceled?: boolean } = {},
+) {
+  const existing = await prisma.pendingFeature.findUnique({
+    where: { stripeSubscriptionId: sub.id },
+    select: { status: true },
+  });
+  if (existing?.status === "CLAIMED") return;
+
+  const tier = sub.metadata?.tier === "NACIONAL" ? "NACIONAL" : "REGIONAL";
+  const scopeRaw = sub.metadata?.featuredScope;
+  const featuredScope: FeaturedScope | undefined =
+    scopeRaw === "NACIONAL" || scopeRaw === "PROVINCIAL" || scopeRaw === "LOCAL"
+      ? scopeRaw
+      : undefined;
+  const customerId =
+    typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+  const periodEnd = getPeriodEnd(sub);
+  const status = mapStatus(sub.status);
+  const nextStatus =
+    opts.canceled || status === "CANCELED" ? "CANCELED" : "PENDING";
+
+  // Email: del checkout si lo tenemos; si no, lo pedimos al cliente de Stripe.
+  let resolvedEmail = email;
+  if (!resolvedEmail) {
+    try {
+      const customer = await getStripe().customers.retrieve(customerId);
+      if (!("deleted" in customer && customer.deleted)) {
+        resolvedEmail = (customer as Stripe.Customer).email ?? null;
+      }
+    } catch (error) {
+      console.warn("[stripe] no se pudo leer el email del cliente:", error);
+    }
+  }
+
+  await prisma.pendingFeature.upsert({
+    where: { stripeSubscriptionId: sub.id },
+    create: {
+      email: resolvedEmail ?? "",
+      tier,
+      featuredScope,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: sub.id,
+      stripeSessionId: sessionId ?? undefined,
+      currentPeriodEnd: periodEnd,
+      status: nextStatus,
+    },
+    update: {
+      ...(resolvedEmail ? { email: resolvedEmail } : {}),
+      ...(featuredScope ? { featuredScope } : {}),
+      stripeCustomerId: customerId,
+      ...(sessionId ? { stripeSessionId: sessionId } : {}),
+      currentPeriodEnd: periodEnd,
+      status: nextStatus,
+    },
+  });
+}
+
+/** Distribuye una suscripcion al flujo normal (con empresa) o al pago-primero. */
+async function routeSubscription(
+  sub: Stripe.Subscription,
+  opts: { canceled?: boolean } = {},
+) {
+  if (sub.metadata?.companyId) {
+    await syncSubscription(sub);
+  } else if (sub.metadata?.kind === "prepaid") {
+    await syncPendingFeature(sub, null, null, opts);
+  } else {
+    console.warn("[stripe] suscripcion sin companyId ni kind prepaid:", sub.id);
+  }
+}
+
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
@@ -132,19 +212,42 @@ export async function POST(req: NextRequest) {
               ? checkout.subscription
               : checkout.subscription.id;
           const sub = await stripe.subscriptions.retrieve(subId);
-          // Garantiza el companyId en la suscripcion por si faltara.
-          if (!sub.metadata?.companyId && checkout.metadata?.companyId) {
-            sub.metadata = { ...sub.metadata, companyId: checkout.metadata.companyId };
+          const isPrepaid =
+            (checkout.metadata?.kind === "prepaid" ||
+              sub.metadata?.kind === "prepaid") &&
+            !sub.metadata?.companyId &&
+            !checkout.metadata?.companyId;
+          if (isPrepaid) {
+            // Pago-primero: aun no hay empresa. Guardamos el pago como pendiente.
+            const email =
+              checkout.customer_details?.email ??
+              checkout.customer_email ??
+              null;
+            await syncPendingFeature(sub, email, checkout.id);
+          } else {
+            // Garantiza el companyId en la suscripcion por si faltara.
+            if (!sub.metadata?.companyId && checkout.metadata?.companyId) {
+              sub.metadata = {
+                ...sub.metadata,
+                companyId: checkout.metadata.companyId,
+              };
+            }
+            await syncSubscription(sub);
           }
-          await syncSubscription(sub);
         }
         break;
       }
 
       case "customer.subscription.created":
-      case "customer.subscription.updated":
+      case "customer.subscription.updated": {
+        await routeSubscription(event.data.object as Stripe.Subscription);
+        break;
+      }
+
       case "customer.subscription.deleted": {
-        await syncSubscription(event.data.object as Stripe.Subscription);
+        await routeSubscription(event.data.object as Stripe.Subscription, {
+          canceled: true,
+        });
         break;
       }
 
@@ -156,7 +259,7 @@ export async function POST(req: NextRequest) {
         const subId = typeof subRef === "string" ? subRef : subRef?.id;
         if (subId) {
           const sub = await stripe.subscriptions.retrieve(subId);
-          await syncSubscription(sub);
+          await routeSubscription(sub);
         }
         break;
       }

@@ -567,6 +567,37 @@ model Subscription {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+// Pago "Destacado" realizado ANTES de asociarlo a una empresa (flujo pago-primero).
+// El cliente paga en Stripe sin necesidad de tener empresa ni cuenta; el webhook
+// crea este registro y, despues, el usuario lo reclama desde /destacar/completar
+// asignandolo a una empresa suya (nueva, reclamada o existente). Al reclamarlo se
+// crea la Subscription real y se reescribe la metadata de Stripe con el companyId,
+// de modo que las renovaciones se sincronizan por el flujo normal.
+model PendingFeature {
+  id    String @id @default(cuid())
+  email String // email del pagador (de Stripe Checkout)
+
+  tier          String // "REGIONAL" | "NACIONAL"
+  featuredScope FeaturedScope? // alcance elegido (provincial/nacional)
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  stripeSessionId      String?   @unique
+  currentPeriodEnd     DateTime?
+
+  // PENDING (pagado, sin asignar) | CLAIMED (ya asignado) | CANCELED (suscripcion cancelada)
+  status          String    @default("PENDING")
+  claimedCompanyId String?
+  claimedByUserId  String?
+  claimedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+}
+
 model Lead {
   id        String     @id @default(cuid())
   companyId String

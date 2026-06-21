@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 import { SITE } from "@/lib/constants";
 import { FEATURED_TIERS, isFeaturedTier, type FeaturedTier } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
-import { getStripe, priceIdForTier } from "@/lib/stripe";
+import { FEATURED_PLAN, getStripe, priceIdForTier } from "@/lib/stripe";
 
 export type BillingState = { error?: string };
 
@@ -155,4 +155,170 @@ export async function openBillingPortal(
   }
 
   redirect(portalUrl);
+}
+
+/**
+ * Flujo PAGO-PRIMERO: inicia el pago del plan Destacado SIN exigir login ni tener
+ * una empresa. El cobro se hace ya en Stripe; el webhook crea un PendingFeature y
+ * el cliente lo asigna despues a una empresa suya en /destacar/completar.
+ *
+ * No lleva companyId: por eso la metadata incluye `kind: "prepaid"`, que el webhook
+ * usa para distinguir este flujo del de una empresa concreta.
+ */
+export async function startPrepaidCheckout(
+  _prev: BillingState,
+  formData: FormData,
+): Promise<BillingState> {
+  const tier = parseTier(formData.get("tier"));
+  const scope = FEATURED_TIERS[tier].scope;
+
+  const priceId = priceIdForTier(tier);
+  if (!priceId) {
+    return {
+      error:
+        tier === "NACIONAL"
+          ? "El plan nacional aun no esta disponible. Prueba con el plan regional o vuelve mas tarde."
+          : "La pasarela de pago no esta configurada todavia.",
+    };
+  }
+  const taxRateId = process.env.STRIPE_TAX_RATE_ID;
+
+  // Si ya hay sesion, prerellenamos el email para acelerar el checkout.
+  const session = await auth();
+  const prefillEmail = session?.user?.email ?? undefined;
+
+  const baseUrl = SITE.url;
+  const successUrl = `${baseUrl}/destacar/completar?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${baseUrl}/destacar?estado=cancelado`;
+
+  let checkoutUrl: string | null = null;
+  try {
+    const stripe = getStripe();
+    const checkout = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+          ...(taxRateId ? { tax_rates: [taxRateId] } : {}),
+        },
+      ],
+      ...(prefillEmail ? { customer_email: prefillEmail } : {}),
+      billing_address_collection: "required",
+      tax_id_collection: { enabled: true },
+      allow_promotion_codes: true,
+      metadata: { kind: "prepaid", featuredScope: scope, tier },
+      subscription_data: {
+        metadata: { kind: "prepaid", featuredScope: scope, tier },
+      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    });
+    checkoutUrl = checkout.url;
+  } catch (error) {
+    console.error("[stripe] error al crear checkout (prepaid):", error);
+    return {
+      error: "No se pudo iniciar el pago. Intentalo de nuevo en unos minutos.",
+    };
+  }
+
+  if (!checkoutUrl) return { error: "No se pudo iniciar el pago." };
+  redirect(checkoutUrl);
+}
+
+/**
+ * Asigna un pago "Destacado" ya realizado (PendingFeature) a una empresa del
+ * usuario. Crea la suscripcion real, marca la empresa como destacada y reescribe
+ * la metadata de la suscripcion de Stripe con el companyId para que las
+ * renovaciones se sincronicen por el webhook normal.
+ *
+ * `backHref` es la URL de /destacar/completar a la que volver si algo falla.
+ */
+export async function assignPendingFeature(
+  pendingId: string,
+  companyId: string,
+  backHref: string,
+  _formData: FormData,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) {
+    redirect(`/login?callbackUrl=${encodeURIComponent(backHref)}`);
+  }
+
+  const pending = await prisma.pendingFeature.findUnique({
+    where: { id: pendingId },
+  });
+  const subId = pending?.stripeSubscriptionId ?? null;
+  if (!pending || pending.status !== "PENDING" || !subId) {
+    redirect(`${backHref}&error=pago`);
+  }
+
+  const company = await prisma.company.findFirst({
+    where: { id: companyId, ownerId: session.user.id },
+    select: { id: true },
+  });
+  if (!company) {
+    redirect(`${backHref}&error=empresa`);
+  }
+
+  const featuredScope = pending.featuredScope ?? undefined;
+
+  let ok = false;
+  try {
+    const stripe = getStripe();
+    // Reasigna la suscripcion a la empresa (renovaciones via webhook normal).
+    await stripe.subscriptions.update(subId, {
+      metadata: {
+        companyId,
+        tier: pending.tier,
+        ...(featuredScope ? { featuredScope } : {}),
+        kind: "prepaid-claimed",
+      },
+    });
+
+    await prisma.subscription.upsert({
+      where: { companyId },
+      create: {
+        companyId,
+        plan: FEATURED_PLAN,
+        status: "ACTIVE",
+        stripeCustomerId: pending.stripeCustomerId,
+        stripeSubscriptionId: subId,
+        currentPeriodEnd: pending.currentPeriodEnd,
+      },
+      update: {
+        plan: FEATURED_PLAN,
+        status: "ACTIVE",
+        stripeCustomerId: pending.stripeCustomerId,
+        stripeSubscriptionId: subId,
+        currentPeriodEnd: pending.currentPeriodEnd,
+      },
+    });
+
+    await prisma.company.update({
+      where: { id: companyId },
+      data: {
+        featured: true,
+        featuredUntil: pending.currentPeriodEnd,
+        ...(featuredScope ? { featuredScope } : {}),
+      },
+    });
+
+    await prisma.pendingFeature.update({
+      where: { id: pendingId },
+      data: {
+        status: "CLAIMED",
+        claimedCompanyId: companyId,
+        claimedByUserId: session.user.id,
+        claimedAt: new Date(),
+      },
+    });
+    ok = true;
+  } catch (error) {
+    console.error("[billing] error al asignar el pago a la empresa:", error);
+  }
+
+  if (!ok) redirect(`${backHref}&error=asignar`);
+  redirect(`/dashboard/empresas/${companyId}/destacar?estado=ok`);
 }
