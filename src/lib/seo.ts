@@ -317,7 +317,7 @@ export function pricingFaqs(): { question: string; answer: string }[] {
     {
       question: "¿Como se realiza el pago y la factura?",
       answer:
-        "El pago se realiza de forma segura con tarjeta a traves de Stripe. Recibiras una factura con IVA emitida por Raúl Díaz Tapia (autonomo, NIF 21067209Z) con todos los datos para tu contabilidad; puedes descargarla desde el portal de cliente.",
+        "El pago se realiza de forma segura con tarjeta a traves de Stripe. Recibiras una factura con IVA con todos los datos para tu contabilidad; puedes descargarla desde el portal de cliente.",
     },
     {
       question: "¿Cuando empieza a destacar mi empresa?",
