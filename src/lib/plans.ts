@@ -35,7 +35,8 @@ export const FEATURED_TIERS: Record<FeaturedTier, FeaturedTierConfig> = {
     id: "REGIONAL",
     scope: "PROVINCIAL",
     name: "Destacado Regional",
-    tagline: "Posiciónate en tu nicho a nivel regional, en toda tu provincia.",
+    tagline:
+      "Lidera tu sector en tu provincia: aparece el primero allí donde te buscan tus clientes.",
     base: 49.99,
     total: withVat(49.99), // 60,49 €
     priceEnv: "STRIPE_PRICE_ID",
@@ -45,7 +46,8 @@ export const FEATURED_TIERS: Record<FeaturedTier, FeaturedTierConfig> = {
     id: "NACIONAL",
     scope: "NACIONAL",
     name: "Destacado Nacional",
-    tagline: "Máxima visibilidad: destaca por encima del resto en toda España.",
+    tagline:
+      "Máxima visibilidad: domina tu sector en toda España y deja atrás a la competencia.",
     base: 99.99,
     total: withVat(99.99), // 120,99 €
     priceEnv: "STRIPE_PRICE_ID_NACIONAL",

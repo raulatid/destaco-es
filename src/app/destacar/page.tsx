@@ -21,17 +21,18 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = buildMetadata({
   title: "Destaca tu empresa",
   description:
-    "Aparece por encima del resto en tu categoria. Elige tu nivel: Regional (tu provincia) por 49,99 €/año o Nacional (toda España) por 99,99 €/año.",
+    "Aparece el primero en tu sector y convierte las búsquedas en clientes. Destacado Regional (tu provincia) 49,99 €/año o Nacional (toda España) 99,99 €/año.",
   path: "/destacar",
   noindex: true,
 });
 
 const BENEFITS = [
-  "Posicion destacada en tu categoria",
-  "Insignia «Destacado» en tu perfil y en los listados",
-  "Mas visibilidad, mas visitas y mas leads",
-  "Estadisticas avanzadas de rendimiento",
-  "Soporte prioritario",
+  "Apareces el primero en tu categoría, por encima de tu competencia",
+  "Insignia «Destacado» que transmite confianza y dispara tus clics",
+  "Multiplicas tu visibilidad: más visitas, más llamadas y más clientes",
+  "Adelantas a tu competencia y captas la demanda de tu sector",
+  "Estadísticas avanzadas para medir tu retorno en tiempo real",
+  "Soporte prioritario: te ayudamos a vender más",
 ];
 
 export default async function DestacarPage() {
@@ -45,7 +46,7 @@ export default async function DestacarPage() {
       <PageHeader
         crumbs={[{ name: "Inicio", href: "/" }, { name: "Destaca tu empresa" }]}
         title="Destaca tu empresa"
-        description="Aparece por encima del resto en tu sector y consigue mas clientes. Tu eliges donde destacar y solo pagas si quieres mas visibilidad."
+        description="Tus clientes ya están buscando lo que ofreces. Aparece el primero en tu sector, gánate su confianza con la insignia «Destacado» y convierte esas búsquedas en clientes. Tú decides dónde destacar y cancelas cuando quieras."
         meta={
           <span className="flex items-center gap-1.5">
             <Star className="size-4" />
@@ -164,8 +165,8 @@ export default async function DestacarPage() {
               <Search className="text-primary size-5" />
               <h3 className="mt-3 font-semibold">Si, ya aparece en Destaco</h3>
               <p className="text-muted-foreground mt-1 flex-1 text-sm">
-                Reclama tu ficha para verificar que es tuya y despues destacala
-                en un par de clics.
+                Reclámala en segundos para verificar que es tuya y destácala con
+                un par de clics. Empieza a recibir más clientes hoy mismo.
               </p>
               <Button
                 asChild
@@ -192,8 +193,8 @@ export default async function DestacarPage() {
               <Building2 className="text-primary size-5" />
               <h3 className="mt-3 font-semibold">No, aun no aparece</h3>
               <p className="text-muted-foreground mt-1 flex-1 text-sm">
-                Publica tu empresa gratis en un minuto y destacala despues para
-                aparecer por encima del resto.
+                Publícala gratis en un minuto y destácala para adelantar a tu
+                competencia y aparecer el primero en tu sector.
               </p>
               <Button asChild variant="brand" className="mt-5 w-full">
                 <Link
@@ -216,10 +217,11 @@ export default async function DestacarPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold tracking-tight">
-                Que incluye el plan Destacado
+                Todo lo que consigues al destacar
               </h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Suscripcion anual. Sin permanencia: cancela cuando quieras.
+                Suscripción anual sin permanencia: cancela cuando quieras y
+                empieza a destacar al instante.
               </p>
             </div>
             <div className="text-right">

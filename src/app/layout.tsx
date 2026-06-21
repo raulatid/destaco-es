@@ -5,10 +5,12 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
-import { PromoBanner } from "@/components/layout/promo-banner";
+import { TopImageBanner } from "@/components/layout/top-image-banner";
 import { SelspySideRails } from "@/components/layout/selspy-side-rails";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { DestacarFab } from "@/components/destacar-fab";
+import { PromoPopup } from "@/components/promo-popup";
 import { JsonLd } from "@/components/json-ld";
 import { SITE } from "@/lib/constants";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -70,11 +72,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <PromoBanner />
+            <TopImageBanner />
             <SiteHeader />
             <main className="min-h-dvh">{children}</main>
             <SiteFooter />
             <SelspySideRails />
+            <DestacarFab />
+            <PromoPopup />
           </ThemeProvider>
         </AuthProvider>
         <JsonLd data={organizationJsonLd()} />

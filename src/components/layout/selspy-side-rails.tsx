@@ -95,13 +95,13 @@ function SelspyAdCard() {
 export function SelspySideRails() {
   return (
     <>
-      <aside className="fixed top-1/2 left-3 z-40 hidden w-52 -translate-y-1/2 min-[1728px]:block">
+      <aside className="fixed top-1/2 left-3 z-40 hidden w-52 -translate-y-1/2 min-[1660px]:block">
         <p className="text-muted-foreground/70 mb-1.5 text-center text-[10px] tracking-wider uppercase">
           Publicidad
         </p>
         <SelspyAdCard />
       </aside>
-      <aside className="fixed top-1/2 right-3 z-40 hidden w-52 -translate-y-1/2 min-[1728px]:block">
+      <aside className="fixed top-1/2 right-3 z-40 hidden w-52 -translate-y-1/2 min-[1660px]:block">
         <p className="text-muted-foreground/70 mb-1.5 text-center text-[10px] tracking-wider uppercase">
           Publicidad
         </p>

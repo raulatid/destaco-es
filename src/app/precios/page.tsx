@@ -54,13 +54,13 @@ const PLANS: Plan[] = [
     price: euro(FEATURED_TIERS.REGIONAL.base),
     period: "al año + IVA",
     priceNote: `${euro(FEATURED_TIERS.REGIONAL.total)} IVA incluido (21%)`,
-    description: "Posiciónate en tu nicho a nivel regional, en toda tu provincia.",
+    description: "Lidera tu sector en tu provincia y llena tu agenda de clientes cercanos.",
     features: [
-      "Todo lo incluido en el plan Gratis",
-      "Posicion destacada en tu categoria a nivel regional (tu provincia)",
-      "Insignia «Destacado» en tu perfil y en los listados",
-      "Mas visibilidad, mas visitas y mas leads",
-      "Estadisticas avanzadas de rendimiento",
+      "Todo lo del plan Gratis",
+      "Apareces el primero en tu categoría en toda tu provincia",
+      "Insignia «Destacado» que transmite confianza y dispara tus clics",
+      "Multiplicas tus visitas, llamadas y clientes",
+      "Estadísticas avanzadas de rendimiento",
       "Soporte prioritario",
     ],
     cta: "Destacar a nivel regional",
@@ -72,13 +72,13 @@ const PLANS: Plan[] = [
     price: euro(FEATURED_TIERS.NACIONAL.base),
     period: "al año + IVA",
     priceNote: `${euro(FEATURED_TIERS.NACIONAL.total)} IVA incluido (21%)`,
-    description: "Máxima visibilidad: destaca por encima del resto en toda España.",
+    description: "Máxima visibilidad: domina tu sector en toda España y deja atrás a la competencia.",
     features: [
-      "Todo lo incluido en el plan Regional",
-      "Posicion destacada a nivel nacional, en toda España",
-      "Maxima visibilidad en tu sector en todo el pais",
+      "Todo lo del plan Regional",
+      "Apareces el primero en tu sector en toda España",
+      "Máxima visibilidad en todo el país, por encima de tu competencia",
       "Insignia «Destacado» en tu perfil y en los listados",
-      "Estadisticas avanzadas de rendimiento",
+      "Estadísticas avanzadas de rendimiento",
       "Soporte prioritario",
     ],
     cta: "Destacar a nivel nacional",
@@ -97,7 +97,7 @@ export default function PreciosPage() {
       <PageHeader
         crumbs={[{ name: "Inicio", href: "/" }, { name: "Precios" }]}
         title="Planes y precios"
-        description="Empieza gratis y, cuando quieras, destaca tu empresa por encima del resto en tu sector para conseguir mas trafico, leads y autoridad."
+        description="Empieza gratis y, cuando quieras, destaca tu empresa para aparecer el primero en tu sector, adelantar a tu competencia y convertir las búsquedas en clientes."
         meta={
           <span>
             Destaca desde {euro(FEATURED_TIERS.REGIONAL.base)}/año + IVA
