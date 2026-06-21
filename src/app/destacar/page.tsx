@@ -5,7 +5,6 @@ import {
   Building2,
   Check,
   Search,
-  Sparkles,
   Star,
 } from "lucide-react";
 
@@ -21,7 +20,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = buildMetadata({
   title: "Destaca tu empresa",
   description:
-    "Aparece el primero en tu sector y convierte las búsquedas en clientes. Destacado Regional (tu provincia) 49,99 €/año o Nacional (toda España) 99,99 €/año.",
+    "Oferta de lanzamiento: 50% de descuento. Aparece el primero en tu sector y convierte las búsquedas en clientes. Destacado Regional (tu provincia) 49,99 €/año o Nacional (toda España) 99,99 €/año.",
   path: "/destacar",
   noindex: true,
 });
@@ -48,8 +47,9 @@ export default async function DestacarPage() {
         title="Destaca tu empresa"
         description="Tus clientes ya están buscando lo que ofreces. Aparece el primero en tu sector, gánate su confianza con la insignia «Destacado» y convierte esas búsquedas en clientes. Tú decides dónde destacar y cancelas cuando quieras."
         meta={
-          <span className="flex items-center gap-1.5">
+          <span className="flex flex-wrap items-center gap-1.5">
             <Star className="size-4" />
+            <span className="text-success font-semibold">Oferta -50%</span> ·
             Desde {euro(FEATURED_TIERS.REGIONAL.base)} / año + IVA · Nacional{" "}
             {euro(FEATURED_TIERS.NACIONAL.base)} / año
           </span>
@@ -81,18 +81,27 @@ export default async function DestacarPage() {
                     <p className="font-medium">{t.name}</p>
                     {t.recommended && (
                       <Badge variant="success">
-                        <Sparkles className="size-3" />
+                        <Star className="size-3" />
                         Recomendado
                       </Badge>
                     )}
                   </div>
-                  <p className="mt-3">
+                  <div className="mt-3 flex flex-wrap items-end gap-x-2">
                     <span className="text-2xl font-semibold tracking-tight">
                       {euro(t.base)}
-                    </span>{" "}
-                    <span className="text-muted-foreground text-sm">
+                    </span>
+                    <span className="text-muted-foreground pb-0.5 text-sm line-through">
+                      {euro(t.base * 2)}
+                    </span>
+                    <span className="text-muted-foreground pb-0.5 text-sm">
                       / año + IVA
                     </span>
+                    <span className="bg-success/15 text-success ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold">
+                      -50%
+                    </span>
+                  </div>
+                  <p className="text-success mt-1 text-xs font-semibold">
+                    Oferta de lanzamiento: 50% de descuento
                   </p>
                   <p className="text-muted-foreground text-xs">
                     {euro(t.total)} IVA incluido (21%)
@@ -126,7 +135,7 @@ export default async function DestacarPage() {
                       <p className="font-medium">{company.name}</p>
                       {company.featured && (
                         <Badge variant="success">
-                          <Sparkles className="size-3" />
+                          <Star className="size-3" />
                           Destacada
                         </Badge>
                       )}
@@ -225,15 +234,21 @@ export default async function DestacarPage() {
               </p>
             </div>
             <div className="text-right">
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap items-end justify-end gap-x-2">
                 <span className="text-muted-foreground pb-1 text-sm">desde</span>
                 <span className="text-3xl font-semibold tracking-tight">
                   {euro(FEATURED_TIERS.REGIONAL.base)}
+                </span>
+                <span className="text-muted-foreground pb-1 text-sm line-through">
+                  {euro(FEATURED_TIERS.REGIONAL.base * 2)}
                 </span>
                 <span className="text-muted-foreground pb-1 text-sm">
                   / año + IVA
                 </span>
               </div>
+              <p className="text-success text-xs font-semibold">
+                Oferta de lanzamiento: 50% de descuento
+              </p>
               <p className="text-muted-foreground text-xs">
                 Nacional {euro(FEATURED_TIERS.NACIONAL.base)} / año + IVA
               </p>

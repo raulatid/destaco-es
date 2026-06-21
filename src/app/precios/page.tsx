@@ -6,7 +6,6 @@ import { FaqSection } from "@/components/faq-section";
 import { JsonLd } from "@/components/json-ld";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { LEGAL } from "@/lib/constants";
 import { euro, FEATURED_TIERS } from "@/lib/plans";
 import { buildMetadata, faqJsonLd, pricingFaqs } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -52,6 +51,7 @@ const PLANS: Plan[] = [
   {
     name: "Destacado Regional",
     price: euro(FEATURED_TIERS.REGIONAL.base),
+    oldPrice: euro(FEATURED_TIERS.REGIONAL.base * 2),
     period: "al año + IVA",
     priceNote: `${euro(FEATURED_TIERS.REGIONAL.total)} IVA incluido (21%)`,
     description: "Lidera tu sector en tu provincia y llena tu agenda de clientes cercanos.",
@@ -70,6 +70,7 @@ const PLANS: Plan[] = [
   {
     name: "Destacado Nacional",
     price: euro(FEATURED_TIERS.NACIONAL.base),
+    oldPrice: euro(FEATURED_TIERS.NACIONAL.base * 2),
     period: "al año + IVA",
     priceNote: `${euro(FEATURED_TIERS.NACIONAL.total)} IVA incluido (21%)`,
     description: "Máxima visibilidad: domina tu sector en toda España y deja atrás a la competencia.",
@@ -100,6 +101,7 @@ export default function PreciosPage() {
         description="Empieza gratis y, cuando quieras, destaca tu empresa para aparecer el primero en tu sector, adelantar a tu competencia y convertir las búsquedas en clientes."
         meta={
           <span>
+            <span className="text-success font-semibold">Oferta -50%</span> ·
             Destaca desde {euro(FEATURED_TIERS.REGIONAL.base)}/año + IVA
             (regional) o {euro(FEATURED_TIERS.NACIONAL.base)}/año (nacional)
           </span>
@@ -131,19 +133,29 @@ export default function PreciosPage() {
                 {plan.description}
               </p>
 
-              <div className="mt-5 flex items-end gap-2">
+              <div className="mt-5 flex flex-wrap items-end gap-x-2 gap-y-1">
                 <span className="text-4xl font-semibold tracking-tight">
                   {plan.price}
                 </span>
+                {plan.oldPrice && (
+                  <span className="text-muted-foreground pb-1 text-lg line-through">
+                    {plan.oldPrice}
+                  </span>
+                )}
                 <span className="text-muted-foreground pb-1 text-sm">
                   {plan.period}
                 </span>
                 {plan.oldPrice && (
-                  <span className="text-muted-foreground pb-1 text-sm line-through">
-                    {plan.oldPrice}
+                  <span className="bg-success/15 text-success ml-auto inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold">
+                    -50%
                   </span>
                 )}
               </div>
+              {plan.oldPrice && (
+                <p className="text-success mt-1.5 text-xs font-semibold">
+                  Oferta de lanzamiento: 50% de descuento
+                </p>
+              )}
               {plan.priceNote && (
                 <p className="text-muted-foreground mt-1 text-xs">
                   {plan.priceNote}
@@ -176,8 +188,7 @@ export default function PreciosPage() {
 
         <p className="text-muted-foreground mt-6 text-center text-xs">
           Pago seguro con tarjeta gestionado por Stripe. Precio con IVA (21%)
-          incluido. Facturas emitidas por {LEGAL.ownerName} (autonomo, NIF{" "}
-          {LEGAL.nif}).
+          incluido.
         </p>
 
         <FaqSection

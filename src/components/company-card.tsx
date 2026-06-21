@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Award, BadgeCheck, MapPin } from "lucide-react";
+import { ArrowUpRight, Award, BadgeCheck, Crown, MapPin } from "lucide-react";
 
 import { CategoryIcon } from "@/components/category-icon";
 import { Badge } from "@/components/ui/badge";
@@ -31,11 +31,15 @@ export function CompanyCard({
   company: CompanyCardData;
   className?: string;
 }) {
+  const featured = company.featured;
   return (
     <Link
       href={`/empresa/${company.slug}`}
       className={cn(
-        "group bg-card hover:border-foreground/20 relative flex flex-col rounded-xl border p-5 transition-all duration-300 hover:shadow-md",
+        "group bg-card relative flex flex-col rounded-xl border p-5 transition-all duration-300",
+        featured
+          ? "border-amber-400/70 shadow-[0_0_28px_-10px_rgba(245,158,11,0.5)] ring-1 ring-amber-400/25 hover:border-amber-400 hover:shadow-[0_0_36px_-8px_rgba(245,158,11,0.62)]"
+          : "hover:border-foreground/20 hover:shadow-md",
         className,
       )}
     >
@@ -52,7 +56,14 @@ export function CompanyCard({
       )}
 
       <div className="flex items-start justify-between gap-3">
-        <div className="bg-muted text-foreground grid size-12 shrink-0 place-items-center rounded-lg border text-sm font-semibold">
+        <div
+          className={cn(
+            "grid size-12 shrink-0 place-items-center rounded-lg border text-sm font-semibold",
+            featured
+              ? "border-amber-400/40 bg-amber-400/10 text-amber-700 dark:text-amber-300"
+              : "bg-muted text-foreground",
+          )}
+        >
           {initials(company.name)}
         </div>
         <div className="flex items-center gap-2">
@@ -62,9 +73,10 @@ export function CompanyCard({
               Premiada
             </Badge>
           )}
-          {company.featured && !company.award && (
-            <Badge variant="outline" className="text-muted-foreground">
-              Destacada
+          {featured && (
+            <Badge className="gap-1 border-amber-400/40 bg-amber-400/15 text-amber-700 dark:text-amber-300">
+              <Crown className="size-3" />
+              Recomendada
             </Badge>
           )}
           <ArrowUpRight className="text-muted-foreground size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />

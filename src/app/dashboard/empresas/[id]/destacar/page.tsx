@@ -130,15 +130,21 @@ export default async function DestacarPage({
               </p>
             </div>
             <div className="text-right">
-              <div className="flex items-end gap-2">
+              <div className="flex flex-wrap items-end justify-end gap-x-2">
                 <span className="text-muted-foreground pb-1 text-sm">desde</span>
                 <span className="text-3xl font-semibold tracking-tight">
                   {euro(FEATURED_TIERS.REGIONAL.base)}
+                </span>
+                <span className="text-muted-foreground pb-1 text-sm line-through">
+                  {euro(FEATURED_TIERS.REGIONAL.base * 2)}
                 </span>
                 <span className="text-muted-foreground pb-1 text-sm">
                   / año + IVA
                 </span>
               </div>
+              <p className="text-success text-xs font-semibold">
+                Oferta de lanzamiento: 50% de descuento
+              </p>
               <p className="text-muted-foreground text-xs">
                 Nacional {euro(FEATURED_TIERS.NACIONAL.base)} / año + IVA · elige
                 el nivel abajo

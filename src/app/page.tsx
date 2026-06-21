@@ -4,7 +4,9 @@ import { Hero } from "@/components/home/hero";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { FeaturedCompanies } from "@/components/home/featured-companies";
 import { HowItWorks } from "@/components/home/how-it-works";
+import { TrustedByMarquee } from "@/components/home/trusted-by";
 import { StatsSection } from "@/components/home/stats-section";
+import { Testimonials } from "@/components/home/testimonials";
 import { PopularLocations } from "@/components/home/popular-locations";
 import { SeoContent } from "@/components/home/seo-content";
 import { CtaSection } from "@/components/home/cta-section";
@@ -28,7 +30,9 @@ export default function HomePage() {
       <CategoryGrid />
       <FeaturedCompanies />
       <HowItWorks />
+      <TrustedByMarquee />
       <StatsSection />
+      <Testimonials />
       <PopularLocations />
       <SeoContent />
       <section className="border-t">

@@ -117,7 +117,10 @@ export function FeatureCheckout({
                       )}
                     </span>
                     <span className="text-sm font-semibold">
-                      {euro(t.base)}
+                      {euro(t.base)}{" "}
+                      <span className="text-muted-foreground text-xs font-normal line-through">
+                        {euro(t.base * 2)}
+                      </span>
                       <span className="text-muted-foreground font-normal">
                         {" "}
                         / año + IVA
@@ -127,8 +130,14 @@ export function FeatureCheckout({
                   <span className="text-muted-foreground mt-0.5 block text-xs">
                     {t.tagline}
                   </span>
-                  <span className="text-muted-foreground block text-xs">
-                    {euro(t.total)} IVA incluido
+                  <span className="text-xs">
+                    <span className="text-success font-semibold">
+                      Oferta -50%
+                    </span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · {euro(t.total)} IVA incluido
+                    </span>
                   </span>
                 </span>
               </label>
