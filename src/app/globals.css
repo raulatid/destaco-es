@@ -270,13 +270,3 @@
     }
   }
 }
-
-/* En pantallas anchas estrechamos un poco el contenido (contenedores max-w-7xl)
-   para dejar sitio a los anuncios laterales (railes de Selspy), sin tocar las
-   bandas a todo el ancho (sus fondos no usan max-w-7xl). Reservamos 30rem para
-   los dos railes. Por debajo de 1660px no se aplica: el ancho vuelve a 80rem. */
-@media (min-width: 1660px) {
-  :root {
-    --container-7xl: min(80rem, calc(100vw - 30rem));
-  }
-}
