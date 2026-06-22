@@ -6,7 +6,6 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
 import { TopImageBanner } from "@/components/layout/top-image-banner";
-import { SelspySideRails } from "@/components/layout/selspy-side-rails";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { DestacarFab } from "@/components/destacar-fab";
@@ -76,7 +75,6 @@ export default function RootLayout({
             <SiteHeader />
             <main className="min-h-dvh">{children}</main>
             <SiteFooter />
-            <SelspySideRails />
             <DestacarFab />
             <PromoPopup />
           </ThemeProvider>
