@@ -124,6 +124,17 @@ export function SiteFooter() {
                 Vértigo Marketing
               </a>
             </p>
+            <p className="text-muted-foreground text-xs">
+              Powered by{" "}
+              <a
+                href="https://selspy.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground font-medium underline-offset-4 hover:underline"
+              >
+                Selspy
+              </a>
+            </p>
           </div>
         </div>
       </div>
