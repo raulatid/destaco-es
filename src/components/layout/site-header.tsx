@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   LayoutDashboard,
@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user ?? null;
   const [open, setOpen] = useState(false);
@@ -62,6 +63,8 @@ export function SiteHeader() {
   }, [user?.email]);
 
   const showDestacar = !user || !hasFeatured;
+  // /empresas ya tiene su propio buscador con filtros: evitamos duplicarlo.
+  const isSearchPage = pathname === "/empresas";
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -87,21 +90,25 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <form
-            onSubmit={onSearch}
-            className="border-border bg-secondary/60 focus-within:bg-secondary focus-within:ring-ring/40 hidden h-9 w-56 items-center gap-2 rounded-lg border px-3 transition-colors focus-within:ring-2 lg:flex"
-          >
-            <button type="submit" aria-label="Buscar" className="shrink-0">
-              <Search className="text-muted-foreground size-4" />
-            </button>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar empresas..."
-              className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-none"
-            />
-          </form>
+          {/* En /empresas ya hay un buscador principal con filtros, asi que
+              ocultamos el del header para no duplicar el buscador. */}
+          {!isSearchPage && (
+            <form
+              onSubmit={onSearch}
+              className="border-border bg-secondary/60 focus-within:bg-secondary focus-within:ring-ring/40 hidden h-9 w-56 items-center gap-2 rounded-lg border px-3 transition-colors focus-within:ring-2 lg:flex"
+            >
+              <button type="submit" aria-label="Buscar" className="shrink-0">
+                <Search className="text-muted-foreground size-4" />
+              </button>
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar empresas..."
+                className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-none"
+              />
+            </form>
+          )}
 
           <ThemeToggle />
 
