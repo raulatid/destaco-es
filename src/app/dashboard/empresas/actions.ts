@@ -75,6 +75,16 @@ const CompanySchema = z.object({
       .optional(),
   ),
   services: z.string().max(4000).optional(),
+  // Foto de portada: data URL (subida desde el ordenador y comprimida en el
+  // cliente) o una URL http(s). El limite cubre el data URL ya optimizado.
+  coverImage: z
+    .string()
+    .max(3_500_000, "La imagen es demasiado grande.")
+    .refine(
+      (v) => v === "" || v.startsWith("data:image/") || /^https?:\/\//.test(v),
+      "La imagen no es valida.",
+    )
+    .optional(),
 });
 
 /** Convierte el textarea de servicios (uno por linea) en filas Service. */
@@ -192,6 +202,7 @@ export async function createCompany(
       founded: d.founded ?? null,
       size: d.size ?? null,
       priceFrom: d.priceFrom ?? null,
+      coverImage: d.coverImage || null,
       provinceId,
       cityId,
       ownerId: session.user.id,
@@ -254,6 +265,7 @@ export async function updateCompany(
       founded: d.founded ?? null,
       size: d.size ?? null,
       priceFrom: d.priceFrom ?? null,
+      coverImage: d.coverImage || null,
       provinceId,
       cityId,
       services: { deleteMany: {}, create: parseServices(d.services) },

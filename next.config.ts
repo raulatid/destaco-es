@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
+    // El formulario de empresa envía la foto de portada como data URL (ya
+    // comprimida en el cliente a ~0,5 MB). Subimos el límite por defecto de 1 MB
+    // de las Server Actions para dar holgura.
+    serverActions: { bodySizeLimit: "4mb" },
   },
 };
 

@@ -176,6 +176,8 @@ export interface EditableCompany {
   founded: string;
   size: string;
   priceFrom: string;
+  /** Foto de portada (data URL o URL) para previsualizar en el formulario. */
+  coverImage: string;
   /** Servicios, uno por linea (para el textarea del formulario). */
   services: string;
 }
@@ -212,6 +214,7 @@ export function getMyCompany(
         founded: c.founded?.toString() ?? "",
         size: c.size ?? "",
         priceFrom: c.priceFrom?.toString() ?? "",
+        coverImage: c.coverImage ?? "",
         services: c.services.map((s) => s.name).join("\n"),
       };
     },

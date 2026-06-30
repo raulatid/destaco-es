@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImageUploadField } from "@/components/dashboard/image-upload-field";
 import type { CompanyFormState } from "@/app/dashboard/empresas/actions";
 import type { EditableCompany } from "@/lib/data/dashboard";
 import { cn, COMPANY_SIZE_LABEL, COMPANY_SIZES } from "@/lib/utils";
@@ -103,6 +104,8 @@ export function CompanyForm({
           className={cn(controlClass, "h-auto py-2.5 leading-relaxed")}
         />
       </Field>
+
+      <ImageUploadField initialValue={initial?.coverImage} />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Ano de fundacion">
