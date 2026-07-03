@@ -24,6 +24,7 @@ export interface PhotoHealthStats {
   refreshed: number;
   refRecovered: number;
   cleared: number;
+  backfilled: number;
   apiCalls: number;
   errors: number;
 }
@@ -48,9 +49,11 @@ async function probe(url: string): Promise<"ok" | "broken" | "unknown"> {
 
 export async function photoHealthSweep(opts?: {
   batch?: number;
+  backfillBatch?: number;
   budgetMs?: number;
 }): Promise<PhotoHealthStats> {
   const batch = opts?.batch ?? 350;
+  const backfillBatch = opts?.backfillBatch ?? 120;
   const deadline = Date.now() + (opts?.budgetMs ?? 90_000);
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
@@ -60,6 +63,7 @@ export async function photoHealthSweep(opts?: {
     refreshed: 0,
     refRecovered: 0,
     cleared: 0,
+    backfilled: 0,
     apiCalls: 0,
     errors: 0,
   };
@@ -96,9 +100,12 @@ export async function photoHealthSweep(opts?: {
       return;
     }
 
-    // Rota de verdad (403/404/410): intentamos refrescar.
+    // Rota de verdad (403/404/410): intentamos refrescar. Si hay un place id
+    // (sourceId) probamos a recuperar la referencia sea cual sea el source:
+    // las fotos lh3 siempre vienen de Places (p. ej. fichas CLAIMED del dueño
+    // que se enriquecieron con Places tambien tienen place id).
     let ref = row.coverImageRef;
-    if (!ref && apiKey && row.source === "GOOGLE_PLACES" && row.sourceId) {
+    if (!ref && apiKey && row.sourceId) {
       stats.apiCalls++;
       ref = (await fetchFirstPhotoRef(row.sourceId, apiKey)) ?? null;
       if (ref) stats.refRecovered++;
@@ -149,6 +156,57 @@ export async function photoHealthSweep(opts?: {
   await Promise.all(
     Array.from({ length: Math.min(CHECK_CONCURRENCY, rows.length) }, worker),
   );
+
+  // Fase 2 — backfill: fichas SIN foto pero CON place id (el import no les
+  // encontro foto en su dia). Se intenta UNA sola vez por ficha (el sello
+  // coverImageCheckedAt las excluye de futuros intentos), asi el gasto de API
+  // es un goteo acotado que se agota al vaciar el backlog.
+  if (apiKey && Date.now() < deadline) {
+    const pending = await prisma.company.findMany({
+      where: {
+        coverImage: null,
+        sourceId: { not: null },
+        coverImageCheckedAt: null,
+      },
+      // Primero las destacadas y las mas recientes (las mas visibles).
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+      take: backfillBatch,
+      select: { id: true, sourceId: true },
+    });
+
+    let bfCursor = 0;
+    async function backfillWorker() {
+      while (bfCursor < pending.length && Date.now() < deadline) {
+        const row = pending[bfCursor++];
+        try {
+          const now = new Date();
+          stats.apiCalls++;
+          const ref = await fetchFirstPhotoRef(row.sourceId!, apiKey!);
+          let uri: string | undefined;
+          if (ref) {
+            stats.apiCalls++;
+            uri = await resolvePhotoUri(ref, apiKey!);
+          }
+          if (uri) stats.backfilled++;
+          await prisma.company.update({
+            where: { id: row.id },
+            data: {
+              ...(uri ? { coverImage: uri, coverImageRef: ref } : {}),
+              coverImageCheckedAt: now,
+            },
+          });
+        } catch {
+          stats.errors++;
+        }
+      }
+    }
+    await Promise.all(
+      Array.from(
+        { length: Math.min(CHECK_CONCURRENCY, pending.length) },
+        backfillWorker,
+      ),
+    );
+  }
 
   return stats;
 }
