@@ -4,23 +4,28 @@ import { cn } from "@/lib/utils";
 
 interface LogoProps {
   className?: string;
-  /** Pasa null para renderizar el wordmark sin enlace. */
+  /** Pasa null para renderizar el logo sin enlace. */
   href?: string | null;
 }
 
 /**
- * Wordmark de marca: "destaco." en negro/blanco segun el tema.
+ * Logo de marca (public/logo.png): wordmark "Destaco" con el astronauta en la
+ * luna como "c". En modo oscuro se invierte con hue-rotate para conservar los
+ * colores de la luna y el cohete mientras el texto pasa a blanco.
  */
 export function Logo({ className, href = "/" }: LogoProps) {
   const mark = (
-    <span
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo.png"
+      alt="Destaco"
+      width={666}
+      height={126}
       className={cn(
-        "text-foreground text-xl font-extrabold tracking-tight",
+        "h-9 w-auto dark:invert dark:hue-rotate-180 dark:saturate-150 dark:brightness-110",
         className,
       )}
-    >
-      destaco.
-    </span>
+    />
   );
 
   if (href === null) return mark;
