@@ -341,6 +341,11 @@ model Company {
   // Multimedia
   logo       String?
   coverImage String?
+  // Las photoUri de Google Places caducan (403). Guardamos la referencia
+  // estable de la foto (places/{id}/photos/{ref}) para poder refrescar la URL,
+  // y cuando se comprobo por ultima vez (barrido rotatorio del cron).
+  coverImageRef       String?
+  coverImageCheckedAt DateTime?
 
   // Datos de negocio
   openingHours Json? // { mon: [["09:00","18:00"]], ... }

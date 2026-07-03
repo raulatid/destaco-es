@@ -261,6 +261,7 @@ export async function runIngestion(
           latitude: company.latitude,
           longitude: company.longitude,
           coverImage: company.coverImage,
+          coverImageRef: company.coverImageRef,
           ratingAvg: company.ratingAvg ?? 0,
           reviewCount: company.reviewCount ?? 0,
           openingHours: company.openingHours

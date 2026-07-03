@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Award, BadgeCheck, Crown, MapPin } from "lucide-react";
 
 import { CategoryIcon } from "@/components/category-icon";
+import { CoverImage } from "@/components/cover-image";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/ui/star-rating";
 import type { CompanyCardData } from "@/lib/data/types";
@@ -44,15 +45,12 @@ export function CompanyCard({
       )}
     >
       {company.coverImage && (
-        <div className="-mx-5 -mt-5 mb-4 aspect-[16/9] overflow-hidden rounded-t-xl border-b">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={company.coverImage}
-            alt={company.name}
-            loading="lazy"
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        </div>
+        <CoverImage
+          src={company.coverImage}
+          alt={company.name}
+          className="-mx-5 -mt-5 mb-4 aspect-[16/9] overflow-hidden rounded-t-xl border-b"
+          imgClassName="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
       )}
 
       <div className="flex items-start justify-between gap-3">

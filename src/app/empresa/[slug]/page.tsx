@@ -16,6 +16,7 @@ import {
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CategoryIcon } from "@/components/category-icon";
+import { CoverImage } from "@/components/cover-image";
 import { JsonLd } from "@/components/json-ld";
 import { ProfileTracker } from "@/components/metrics/profile-tracker";
 import { ReviewGate } from "@/components/reviews/review-gate";
@@ -158,14 +159,18 @@ export default async function CompanyPage({ params }: PageProps) {
           />
           <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-start">
             {company.coverImage ? (
-              <div className="size-20 shrink-0 overflow-hidden rounded-2xl border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={company.coverImage}
-                  alt={company.name}
-                  className="size-full object-cover"
-                />
-              </div>
+              <CoverImage
+                src={company.coverImage}
+                alt={company.name}
+                loading="eager"
+                className="size-20 shrink-0 overflow-hidden rounded-2xl border"
+                imgClassName="size-full object-cover"
+                fallback={
+                  <div className="bg-muted text-foreground grid size-20 shrink-0 place-items-center rounded-2xl border text-2xl font-bold">
+                    {initials(company.name)}
+                  </div>
+                }
+              />
             ) : (
               <div className="bg-muted text-foreground grid size-20 shrink-0 place-items-center rounded-2xl border text-2xl font-bold">
                 {initials(company.name)}
@@ -322,11 +327,10 @@ export default async function CompanyPage({ params }: PageProps) {
                     className="bg-card overflow-hidden rounded-xl border"
                   >
                     {project.coverImage && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <CoverImage
                         src={project.coverImage}
                         alt={project.title}
-                        className="h-40 w-full object-cover"
+                        imgClassName="h-40 w-full object-cover"
                       />
                     )}
                     <div className="p-4">

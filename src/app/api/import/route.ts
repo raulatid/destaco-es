@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { runDailyGoogleImport } from "@/lib/ingest/google-daily";
+import { photoHealthSweep } from "@/lib/ingest/photo-health";
 
 // El import diario enriquece con IA (en paralelo) y publica hasta ~100 fichas,
 // lo que requiere mas de 60 s. Necesita plan Vercel Pro (limite 300 s). En
@@ -31,7 +32,19 @@ export async function GET(req: NextRequest) {
 
   try {
     const result = await runDailyGoogleImport(force);
-    return NextResponse.json(result);
+
+    // Salud de fotos: barrido rotatorio que refresca las photoUri caducadas
+    // (o las limpia si no son recuperables). Aislado: si falla, el import vale.
+    let photoHealth: unknown;
+    try {
+      photoHealth = await photoHealthSweep({ batch: 350, budgetMs: 60_000 });
+    } catch (error) {
+      photoHealth = {
+        error: error instanceof Error ? error.message : "error",
+      };
+    }
+
+    return NextResponse.json({ ...result, photoHealth });
   } catch (error) {
     return NextResponse.json(
       {

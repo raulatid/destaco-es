@@ -115,8 +115,10 @@ const PHOTO_MAX_WIDTH = 800;
  * Resuelve una referencia de foto de Places (New) a una URL mostrable.
  * Con `skipHttpRedirect=true` la API devuelve JSON con `photoUri`, una URL de
  * googleusercontent SIN la API key — segura para usar en <img> del frontend.
+ * OJO: esa photoUri CADUCA (Google la revoca pasadas unas semanas, 403), por
+ * eso guardamos tambien la referencia `name` y la refrescamos con el cron.
  */
-async function resolvePhotoUri(
+export async function resolvePhotoUri(
   name: string,
   apiKey: string,
 ): Promise<string | undefined> {
@@ -126,6 +128,32 @@ async function resolvePhotoUri(
     if (!res.ok) return undefined;
     const data = (await res.json()) as { photoUri?: string };
     return data.photoUri;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Recupera la referencia de la primera foto de un place (Place Details, solo el
+ * campo `photos`). Se usa para sanar fichas antiguas importadas sin referencia.
+ */
+export async function fetchFirstPhotoRef(
+  placeId: string,
+  apiKey: string,
+): Promise<string | undefined> {
+  try {
+    const res = await fetch(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+      {
+        headers: {
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": "photos",
+        },
+      },
+    );
+    if (!res.ok) return undefined;
+    const data = (await res.json()) as { photos?: { name?: string }[] };
+    return data.photos?.[0]?.name ?? undefined;
   } catch {
     return undefined;
   }
@@ -182,6 +210,7 @@ export async function searchGooglePlaces(
       const photoName = place.photos?.[0]?.name;
       if (photoName) {
         normalized.coverImage = await resolvePhotoUri(photoName, apiKey);
+        normalized.coverImageRef = photoName;
       }
       results.push(normalized);
     }

@@ -31,6 +31,8 @@ export interface NormalizedCompany {
   openingHours?: OpeningHours;
   /** URL de la foto principal (Google Places Photo / lh3.googleusercontent). */
   coverImage?: string;
+  /** Referencia estable de la foto (places/{id}/photos/{ref}) para refrescarla. */
+  coverImageRef?: string;
 }
 
 export interface IngestStats {
