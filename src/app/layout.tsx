@@ -5,7 +5,6 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
-import { TopImageBanner } from "@/components/layout/top-image-banner";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { DestacarFab } from "@/components/destacar-fab";
@@ -71,7 +70,6 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <TopImageBanner />
             <SiteHeader />
             <main className="min-h-dvh">{children}</main>
             <SiteFooter />
