@@ -4,25 +4,32 @@ import { Building2, Eye, Plus, Star, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { auth } from "@/lib/auth";
-import { getMyCompanies } from "@/lib/data/dashboard";
+import { getMyCompanies, getMyCompanyMetrics } from "@/lib/data/dashboard";
 import { formatCompact } from "@/lib/utils";
 
 export default async function DashboardPage() {
   const session = await auth();
-  const companies = session?.user
-    ? await getMyCompanies(session.user.id)
-    : [];
+  const [companies, metrics] = session?.user
+    ? await Promise.all([
+        getMyCompanies(session.user.id),
+        getMyCompanyMetrics(session.user.id),
+      ])
+    : [[], []];
 
   const totalViews = companies.reduce((sum, c) => sum + c.viewCount, 0);
   const totalReviews = companies.reduce((sum, c) => sum + c.reviewCount, 0);
 
-  // En la cuenta admin (Raúl) la primera tarjeta muestra "Clientes"; el resto
-  // de usuarios ve su numero real de empresas publicadas.
+  // "Clientes" = contactos reales conseguidos en sus fichas: clics en telefono,
+  // email, web y "contactar" (eventos del ProfileTracker via /api/metrics).
+  const totalClients = metrics.reduce(
+    (sum, m) =>
+      sum + m.phoneClicks + m.emailClicks + m.websiteClicks + m.contactClicks,
+    0,
+  );
+  // La cuenta admin mantiene el valor fijado a mano por Raul.
   const isAdmin = session?.user?.role === "ADMIN";
   const cards = [
-    isAdmin
-      ? { icon: Users, label: "Clientes", value: 894 }
-      : { icon: Building2, label: "Mis empresas", value: companies.length },
+    { icon: Users, label: "Clientes", value: isAdmin ? 894 : totalClients },
     { icon: Eye, label: "Visitas totales", value: totalViews },
     { icon: Star, label: "Resenas recibidas", value: totalReviews },
   ];
