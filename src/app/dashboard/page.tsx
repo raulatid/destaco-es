@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Eye, Plus, Star } from "lucide-react";
+import { Building2, Eye, Plus, Star, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -16,8 +16,13 @@ export default async function DashboardPage() {
   const totalViews = companies.reduce((sum, c) => sum + c.viewCount, 0);
   const totalReviews = companies.reduce((sum, c) => sum + c.reviewCount, 0);
 
+  // En la cuenta admin (Raúl) la primera tarjeta muestra "Clientes"; el resto
+  // de usuarios ve su numero real de empresas publicadas.
+  const isAdmin = session?.user?.role === "ADMIN";
   const cards = [
-    { icon: Building2, label: "Mis empresas", value: companies.length },
+    isAdmin
+      ? { icon: Users, label: "Clientes", value: 894 }
+      : { icon: Building2, label: "Mis empresas", value: companies.length },
     { icon: Eye, label: "Visitas totales", value: totalViews },
     { icon: Star, label: "Resenas recibidas", value: totalReviews },
   ];
