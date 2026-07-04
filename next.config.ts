@@ -17,6 +17,14 @@ const nextConfig: NextConfig = {
     // de las Server Actions para dar holgura.
     serverActions: { bodySizeLimit: "4mb" },
   },
+  // IndexNow exige (en la práctica) el fichero de clave clásico en la raíz:
+  // /{clave}.txt. Lo servimos reescribiendo a la ruta que ya publica la clave.
+  async rewrites() {
+    const key = process.env.INDEXNOW_KEY;
+    return key
+      ? [{ source: `/${key}.txt`, destination: "/api/indexnow-key" }]
+      : [];
+  },
 };
 
 export default nextConfig;

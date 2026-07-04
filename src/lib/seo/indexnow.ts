@@ -37,7 +37,10 @@ export async function pingIndexNow(urls: string[]): Promise<boolean> {
       body: JSON.stringify({
         host,
         key,
-        keyLocation: `${SITE.url}/api/indexnow-key`,
+        // Convencion clasica: el fichero {clave}.txt en la raiz del dominio
+        // (rewrite en next.config.ts). El validador de IndexNow es quisquilloso
+        // con las keyLocation "raras" tipo /api/....
+        keyLocation: `${SITE.url}/${key}.txt`,
         urlList: urls.slice(0, 10_000),
       }),
     });
