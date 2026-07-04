@@ -82,20 +82,28 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg px-2.5 py-2 text-sm font-medium transition-colors"
             >
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1.5">
+        {/* min-w-0: permite que este cluster ceda ancho (lo absorbe el
+            buscador, que es flexible) en vez de desbordar el header. */}
+        <div className="ml-auto flex min-w-0 items-center gap-1.5">
           {/* En /empresas ya hay un buscador principal con filtros, asi que
               ocultamos el del header para no duplicar el buscador. */}
           {!isSearchPage && (
             <form
               onSubmit={onSearch}
-              className="border-border bg-secondary/60 focus-within:bg-secondary focus-within:ring-ring/40 hidden h-9 w-56 items-center gap-2 rounded-lg border px-3 transition-colors focus-within:ring-2 lg:flex"
+              className={cn(
+                // min-w-0 + shrink: si el header va justo, cede el buscador y
+                // nunca el logo. Sin sesion hay dos botones mas (Acceder y
+                // Publicar), asi que el buscador entra un tramo mas tarde.
+                "border-border bg-secondary/60 focus-within:bg-secondary focus-within:ring-ring/40 hidden h-9 w-56 min-w-0 shrink items-center gap-2 rounded-lg border px-3 transition-colors focus-within:ring-2",
+                user ? "lg:flex" : "xl:flex",
+              )}
             >
               <button type="submit" aria-label="Buscar" className="shrink-0">
                 <Search className="text-muted-foreground size-4" />
@@ -105,7 +113,7 @@ export function SiteHeader() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar empresas..."
-                className="placeholder:text-muted-foreground w-full bg-transparent text-sm outline-none"
+                className="placeholder:text-muted-foreground w-full min-w-0 bg-transparent text-sm outline-none"
               />
             </form>
           )}
@@ -178,7 +186,7 @@ export function SiteHeader() {
                 asChild
                 variant="outline"
                 size="sm"
-                className="hidden lg:inline-flex"
+                className="hidden min-[1140px]:inline-flex"
               >
                 <Link href="/registro">Publicar empresa</Link>
               </Button>

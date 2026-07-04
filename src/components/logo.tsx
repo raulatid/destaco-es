@@ -22,7 +22,10 @@ export function Logo({ className, href = "/" }: LogoProps) {
       width={666}
       height={126}
       className={cn(
-        "h-9 w-auto dark:invert dark:hue-rotate-180 dark:saturate-150 dark:brightness-110",
+        // max-w-none: anula el max-width:100% del preflight; sin el, cuando el
+        // header va justo de sitio el flex encoge el enlace y el logo se
+        // aplasta. shrink-0 evita que el propio img ceda como flex item.
+        "h-8 w-auto max-w-none shrink-0 dark:invert dark:hue-rotate-180 dark:saturate-150 dark:brightness-110",
         className,
       )}
     />
@@ -34,7 +37,7 @@ export function Logo({ className, href = "/" }: LogoProps) {
     <Link
       href={href}
       aria-label="Destaco.es — inicio"
-      className="transition-opacity hover:opacity-70"
+      className="shrink-0 transition-opacity hover:opacity-70"
     >
       {mark}
     </Link>
