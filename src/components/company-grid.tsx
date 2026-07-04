@@ -2,6 +2,7 @@ import { Building2 } from "lucide-react";
 
 import { CompanyCard } from "@/components/company-card";
 import { EmptyState } from "@/components/empty-state";
+import { ImpressionTracker } from "@/components/metrics/impression-tracker";
 import type { CompanyCardData } from "@/lib/data/types";
 
 export function CompanyGrid({
@@ -25,6 +26,7 @@ export function CompanyGrid({
 
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ImpressionTracker slugs={companies.map((c) => c.slug)} />
       {companies.map((company) => (
         <CompanyCard key={company.slug} company={company} className="h-full" />
       ))}

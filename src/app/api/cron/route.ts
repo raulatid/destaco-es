@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { SITE } from "@/lib/constants";
+import { sendStatsReports } from "@/lib/email/stats-report";
 import { prisma } from "@/lib/prisma";
 import { recomputeRankingScores } from "@/lib/ranking-job";
 import {
@@ -82,6 +83,13 @@ export async function GET(req: NextRequest) {
     };
   } catch (e) {
     out.seo = { error: msg(e) };
+  }
+
+  // 3. Informe de visitas por email a duenos sin plan Destacado (batch diario).
+  try {
+    out.statsEmails = await sendStatsReports(40);
+  } catch (e) {
+    out.statsEmails = { error: msg(e) };
   }
 
   return NextResponse.json({ ok: true, ...out });

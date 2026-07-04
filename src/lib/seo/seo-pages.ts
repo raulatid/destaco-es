@@ -16,7 +16,10 @@ import { prisma } from "../prisma";
 import { landingTitle } from "../seo";
 
 // Una landing categoria+ciudad necesita al menos estas empresas para indexarse.
-export const MIN_ITEMS_FOR_INDEX = 3;
+// Bajado de 3 a 2 (2026-07): con el texto unico + FAQs + datos reales, una
+// landing con 2 empresas ya no es "thin"; desbloquea ~100 paginas en Google.
+// Las de 1 empresa siguen en noindex (ahi se cuelan ciudades sucias).
+export const MIN_ITEMS_FOR_INDEX = 2;
 
 // Filas por INSERT masivo. 13 columnas x 500 filas = 6500 binds, holgado bajo
 // el limite de 65535 parametros de PostgreSQL.

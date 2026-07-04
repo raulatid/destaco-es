@@ -96,3 +96,64 @@ export function claimRejectedEmail(input: ClaimResolvedInput) {
   );
   return { subject, html };
 }
+
+// ---- Informe periodico de visitas (cron) -----------------------------------
+
+export interface StatsReportInput {
+  firstName?: string | null;
+  companyName: string;
+  /** true si el usuario tiene mas de una empresa publicada. */
+  hasMore: boolean;
+  views: number;
+  impressions: number;
+  clicks: number;
+  destacarUrl: string;
+  optOutUrl: string;
+}
+
+const num = (n: number) => new Intl.NumberFormat("es-ES").format(n);
+
+function statRow(label: string, value: number): string {
+  return `<tr>
+    <td style="padding:10px 0;font-size:14px;color:#404040;border-bottom:1px solid #f0f0f0;">${label}</td>
+    <td style="padding:10px 0;font-size:16px;font-weight:700;text-align:right;border-bottom:1px solid #f0f0f0;">${num(value)}</td>
+  </tr>`;
+}
+
+/**
+ * Informe de visibilidad para duenos de empresas publicadas SIN plan Destacado.
+ * Muestra sus metricas REALES y anima a destacar para multiplicar visibilidad.
+ */
+export function statsReportEmail(input: StatsReportInput) {
+  const who = input.hasMore
+    ? `${input.companyName} y el resto de tus empresas`
+    : input.companyName;
+  const subject = `${input.companyName} en Destaco: ${num(input.impressions)} apariciones y ${num(input.views)} visitas`;
+  const html = layout(
+    subject,
+    `<h1 style="font-size:18px;margin:0 0 12px;">${input.firstName ? `Hola, ${input.firstName}. ` : ""}Asi va tu empresa en Destaco</h1>
+     <p style="font-size:15px;line-height:1.55;color:#404040;margin:0 0 16px;">
+       Resumen de lo que ha conseguido <strong>${who}</strong> hasta hoy:
+     </p>
+     <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">
+       ${statRow("Apariciones en listados y busquedas", input.impressions)}
+       ${statRow("Visitas a tu ficha", input.views)}
+       ${statRow("Contactos (telefono, email y web)", input.clicks)}
+     </table>
+     <p style="font-size:15px;line-height:1.55;color:#404040;margin:0 0 8px;">
+       <strong>¿Quieres multiplicar estos numeros?</strong> Las empresas con el plan
+       Destacado aparecen <strong>siempre en las primeras posiciones</strong> de su
+       categoria y ciudad, por delante de su competencia: eso supone hasta
+       <strong>&times;10 de visibilidad</strong> respecto a una ficha normal.
+     </p>
+     <p style="font-size:14px;color:#737373;margin:0 0 20px;">
+       Oferta de lanzamiento: 50% de descuento, desde 49,99 &euro;/a&ntilde;o + IVA. Sin permanencia.
+     </p>
+     <p style="margin:0 0 8px;">${button(input.destacarUrl, "Destacar mi empresa")}</p>
+     <p style="font-size:12px;color:#a3a3a3;margin:16px 0 0;">
+       Recibes este informe porque tienes una empresa publicada en Destaco.es.
+       <a href="${input.optOutUrl}" style="color:#737373;">No quiero recibir estos informes</a>.
+     </p>`,
+  );
+  return { subject, html };
+}

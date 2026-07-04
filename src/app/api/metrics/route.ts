@@ -43,6 +43,30 @@ export async function POST(req: NextRequest) {
   const type = typeof body.type === "string" ? body.type : null;
   const source = typeof body.source === "string" ? body.source.slice(0, 200) : null;
 
+  // Lote de impresiones de listado: { slugs: [...], type: "LISTING_IMPRESSION" }.
+  // Solo incrementa el contador agregado (sin fila MetricEvent por empresa:
+  // a 20 tarjetas por pagina vista, la tabla de eventos se dispararia).
+  if (type === "LISTING_IMPRESSION" && Array.isArray(body.slugs)) {
+    const slugs = body.slugs
+      .filter((s): s is string => typeof s === "string" && s.length > 0)
+      .slice(0, 30);
+    if (slugs.length === 0) {
+      return NextResponse.json({ error: "Parametros invalidos" }, { status: 400 });
+    }
+    try {
+      await prisma.company.updateMany({
+        where: { slug: { in: slugs } },
+        data: { impressions: { increment: 1 } },
+      });
+      return new NextResponse(null, { status: 204 });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Error" },
+        { status: 500 },
+      );
+    }
+  }
+
   if (!slug || !type || !VALID.has(type)) {
     return NextResponse.json({ error: "Parametros invalidos" }, { status: 400 });
   }
