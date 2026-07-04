@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = buildMetadata({
   title: "Precios: plan Gratis, Destacado Regional y Nacional",
   description:
-    "Aparece gratis en el directorio de empresas de España o destaca por encima del resto: plan Regional por 49,99 €/año (tu provincia) o Nacional por 99,99 €/año (toda España).",
+    "Aparece gratis en el directorio de empresas de España o destaca por encima del resto: plan Regional por 4,17 €/mes (tu provincia) o Nacional por 8,33 €/mes (toda España), con facturación anual.",
   path: "/precios",
 });
 
@@ -50,10 +50,10 @@ const PLANS: Plan[] = [
   },
   {
     name: "Destacado Regional",
-    price: euro(FEATURED_TIERS.REGIONAL.base),
-    oldPrice: euro(FEATURED_TIERS.REGIONAL.base * 2),
-    period: "al año + IVA",
-    priceNote: `${euro(FEATURED_TIERS.REGIONAL.total)} IVA incluido (21%)`,
+    price: euro(FEATURED_TIERS.REGIONAL.monthly),
+    oldPrice: euro((FEATURED_TIERS.REGIONAL.base * 2) / 12),
+    period: "al mes",
+    priceNote: `Facturado anualmente: ${euro(FEATURED_TIERS.REGIONAL.base)} + IVA (${euro(FEATURED_TIERS.REGIONAL.total)} IVA incluido)`,
     description: "Lidera tu sector en tu provincia y llena tu agenda de clientes cercanos.",
     features: [
       "Todo lo del plan Gratis",
@@ -69,10 +69,10 @@ const PLANS: Plan[] = [
   },
   {
     name: "Destacado Nacional",
-    price: euro(FEATURED_TIERS.NACIONAL.base),
-    oldPrice: euro(FEATURED_TIERS.NACIONAL.base * 2),
-    period: "al año + IVA",
-    priceNote: `${euro(FEATURED_TIERS.NACIONAL.total)} IVA incluido (21%)`,
+    price: euro(FEATURED_TIERS.NACIONAL.monthly),
+    oldPrice: euro((FEATURED_TIERS.NACIONAL.base * 2) / 12),
+    period: "al mes",
+    priceNote: `Facturado anualmente: ${euro(FEATURED_TIERS.NACIONAL.base)} + IVA (${euro(FEATURED_TIERS.NACIONAL.total)} IVA incluido)`,
     description: "Máxima visibilidad: domina tu sector en toda España y deja atrás a la competencia.",
     features: [
       "Todo lo del plan Regional",
@@ -102,8 +102,9 @@ export default function PreciosPage() {
         meta={
           <span>
             <span className="text-success font-semibold">Oferta -50%</span> ·
-            Destaca desde {euro(FEATURED_TIERS.REGIONAL.base)}/año + IVA
-            (regional) o {euro(FEATURED_TIERS.NACIONAL.base)}/año (nacional)
+            Destaca desde {euro(FEATURED_TIERS.REGIONAL.monthly)}/mes (regional)
+            o {euro(FEATURED_TIERS.NACIONAL.monthly)}/mes (nacional), facturado
+            anualmente
           </span>
         }
       />

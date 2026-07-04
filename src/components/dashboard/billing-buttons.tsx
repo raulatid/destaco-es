@@ -55,7 +55,7 @@ export function CheckoutButton({
 }
 
 /**
- * Selector de nivel (Regional 49,99 € / Nacional 99,99 €) + boton de pago.
+ * Selector de nivel (precio mostrado en €/mes, cobro anual) + boton de pago.
  * El nivel viaja a startCheckout como campo "tier" del formulario.
  */
 export function FeatureCheckout({
@@ -118,13 +118,13 @@ export function FeatureCheckout({
                       )}
                     </span>
                     <span className="text-sm font-semibold">
-                      {euro(t.base)}{" "}
+                      {euro(t.monthly)}{" "}
                       <span className="text-muted-foreground text-xs font-normal line-through">
-                        {euro(t.base * 2)}
+                        {euro((t.base * 2) / 12)}
                       </span>
                       <span className="text-muted-foreground font-normal">
                         {" "}
-                        / año + IVA
+                        / mes
                       </span>
                     </span>
                   </span>
@@ -137,7 +137,8 @@ export function FeatureCheckout({
                     </span>
                     <span className="text-muted-foreground">
                       {" "}
-                      · {euro(t.total)} IVA incluido
+                      · facturado anualmente: {euro(t.base)} + IVA (
+                      {euro(t.total)} IVA incluido)
                     </span>
                   </span>
                 </span>
@@ -229,13 +230,13 @@ export function PrepaidCheckout({
                       )}
                     </span>
                     <span className="text-sm font-semibold">
-                      {euro(t.base)}{" "}
+                      {euro(t.monthly)}{" "}
                       <span className="text-muted-foreground text-xs font-normal line-through">
-                        {euro(t.base * 2)}
+                        {euro((t.base * 2) / 12)}
                       </span>
                       <span className="text-muted-foreground font-normal">
                         {" "}
-                        / año + IVA
+                        / mes
                       </span>
                     </span>
                   </span>
@@ -248,7 +249,8 @@ export function PrepaidCheckout({
                     </span>
                     <span className="text-muted-foreground">
                       {" "}
-                      · {euro(t.total)} IVA incluido
+                      · facturado anualmente: {euro(t.base)} + IVA (
+                      {euro(t.total)} IVA incluido)
                     </span>
                   </span>
                 </span>

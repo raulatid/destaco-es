@@ -312,7 +312,7 @@ export function pricingFaqs(): { question: string; answer: string }[] {
     {
       question: "¿Cuanto cuesta el plan Destacado?",
       answer:
-        "49,99 € al año + IVA (21%), es decir 60,49 € IVA incluido (precio de lanzamiento, antes 100 €). Sin permanencia: se renueva cada año y puedes cancelar la renovacion cuando quieras.",
+        "Desde 4,17 € al mes con facturacion anual: un unico pago de 49,99 € + IVA al año (60,49 € IVA incluido; precio de lanzamiento con 50% de descuento). Sin permanencia: puedes cancelar la renovacion cuando quieras.",
     },
     {
       question: "¿Como se realiza el pago y la factura?",

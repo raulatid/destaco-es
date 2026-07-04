@@ -157,8 +157,9 @@ export function destacarPitchEmail(input: DestacarPitchInput) {
      </table>
      <p style="margin:0 0 10px;">${button(input.destacarUrl, "Quiero aparecer el primero")}</p>
      <p style="font-size:14px;color:#525252;margin:0 0 4px;">
-       <strong>Oferta de lanzamiento: 50% de descuento.</strong> Desde 49,99 &euro;/a&ntilde;o + IVA
-       (sale a poco mas de 4 &euro;/mes). Sin permanencia: lo cancelas cuando quieras.
+       <strong>Oferta de lanzamiento: 50% de descuento.</strong> Desde 4,17 &euro;/mes
+       con facturacion anual (un unico pago de 49,99 &euro; + IVA al a&ntilde;o).
+       Sin permanencia: lo cancelas cuando quieras.
      </p>
      <p style="font-size:13px;color:#737373;margin:12px 0 0;">
        P. D. Tu ficha gratuita seguira siendo gratis siempre. Esto es solo para

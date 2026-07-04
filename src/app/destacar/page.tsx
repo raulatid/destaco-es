@@ -20,7 +20,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Destaca tu empresa",
   description:
-    "Oferta de lanzamiento: 50% de descuento. Aparece el primero en tu sector y convierte las búsquedas en clientes. Destacado Regional (tu provincia) 49,99 €/año o Nacional (toda España) 99,99 €/año.",
+    "Oferta de lanzamiento: 50% de descuento. Aparece el primero en tu sector y convierte las búsquedas en clientes. Destacado Regional (tu provincia) por 4,17 €/mes o Nacional (toda España) por 8,33 €/mes, con facturación anual.",
   path: "/destacar",
   noindex: true,
 });
@@ -50,8 +50,8 @@ export default async function DestacarPage() {
           <span className="flex flex-wrap items-center gap-1.5">
             <Star className="size-4" />
             <span className="text-success font-semibold">Oferta -50%</span> ·
-            Desde {euro(FEATURED_TIERS.REGIONAL.base)} / año + IVA · Nacional{" "}
-            {euro(FEATURED_TIERS.NACIONAL.base)} / año
+            Desde {euro(FEATURED_TIERS.REGIONAL.monthly)}/mes · Nacional{" "}
+            {euro(FEATURED_TIERS.NACIONAL.monthly)}/mes · facturado anualmente
           </span>
         }
       />
@@ -203,20 +203,21 @@ export default async function DestacarPage() {
               <div className="flex flex-wrap items-end justify-end gap-x-2">
                 <span className="text-muted-foreground pb-1 text-sm">desde</span>
                 <span className="text-3xl font-semibold tracking-tight">
-                  {euro(FEATURED_TIERS.REGIONAL.base)}
+                  {euro(FEATURED_TIERS.REGIONAL.monthly)}
                 </span>
                 <span className="text-muted-foreground pb-1 text-sm line-through">
-                  {euro(FEATURED_TIERS.REGIONAL.base * 2)}
+                  {euro((FEATURED_TIERS.REGIONAL.base * 2) / 12)}
                 </span>
                 <span className="text-muted-foreground pb-1 text-sm">
-                  / año + IVA
+                  / mes
                 </span>
               </div>
               <p className="text-success text-xs font-semibold">
                 Oferta de lanzamiento: 50% de descuento
               </p>
               <p className="text-muted-foreground text-xs">
-                Nacional {euro(FEATURED_TIERS.NACIONAL.base)} / año + IVA
+                Facturado anualmente: {euro(FEATURED_TIERS.REGIONAL.base)} + IVA
+                · Nacional {euro(FEATURED_TIERS.NACIONAL.monthly)}/mes
               </p>
             </div>
           </div>
