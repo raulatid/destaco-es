@@ -28,11 +28,11 @@ export function CtaSection() {
           <div className="relative grid items-center gap-8 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-                Tienes una empresa? Destaca en Destaco.
+                ¿Tienes una empresa? Destaca en Destaco.
               </h2>
               <p className="text-muted-foreground mt-3 text-pretty">
                 Aparece ante miles de clientes que buscan tus servicios cada
-                dia. Crear o reclamar tu perfil es gratis.
+                día. Crear o reclamar tu perfil es gratis.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button asChild variant="brand" size="lg">
