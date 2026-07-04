@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { SITE } from "@/lib/constants";
-import { sendStatsReports } from "@/lib/email/stats-report";
+import { sendDestacarPitches } from "@/lib/email/destacar-pitch";
 import { prisma } from "@/lib/prisma";
 import { recomputeRankingScores } from "@/lib/ranking-job";
 import {
@@ -85,11 +85,11 @@ export async function GET(req: NextRequest) {
     out.seo = { error: msg(e) };
   }
 
-  // 3. Informe de visitas por email a duenos sin plan Destacado (batch diario).
+  // 3. Emails de conversion al plan Destacado (batch diario, max 3 toques).
   try {
-    out.statsEmails = await sendStatsReports(40);
+    out.destacarPitch = await sendDestacarPitches(40);
   } catch (e) {
-    out.statsEmails = { error: msg(e) };
+    out.destacarPitch = { error: msg(e) };
   }
 
   return NextResponse.json({ ok: true, ...out });

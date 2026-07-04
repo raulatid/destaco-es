@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { optOutToken } from "@/lib/email/stats-report";
+import { optOutToken } from "@/lib/email/destacar-pitch";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";

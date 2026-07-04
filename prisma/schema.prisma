@@ -173,8 +173,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Informe periodico de visitas por email (cron): ultima vez enviado y baja.
+  // Emails de conversion al plan Destacado (cron): ultimo envio, nº de toques
+  // (tope de 3) y baja RGPD.
   statsEmailLastAt DateTime?
+  statsEmailCount  Int       @default(0)
   statsEmailOptOut Boolean   @default(false)
 
   accounts       Account[]

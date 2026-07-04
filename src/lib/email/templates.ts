@@ -97,62 +97,76 @@ export function claimRejectedEmail(input: ClaimResolvedInput) {
   return { subject, html };
 }
 
-// ---- Informe periodico de visitas (cron) -----------------------------------
+// ---- Email de conversion al plan Destacado (cron) ---------------------------
 
-export interface StatsReportInput {
+export interface DestacarPitchInput {
   firstName?: string | null;
   companyName: string;
-  /** true si el usuario tiene mas de una empresa publicada. */
-  hasMore: boolean;
-  views: number;
-  impressions: number;
-  clicks: number;
+  categoryNoun?: string | null; // "abogados", "agencias de marketing"...
+  cityName?: string | null;
+  /** Empresas de la misma categoria+ciudad (competencia en su listado). */
+  competitors: number;
+  /** Nº de toque (1-3): cambia el asunto para no repetirse. */
+  touch: number;
   destacarUrl: string;
   optOutUrl: string;
 }
 
-const num = (n: number) => new Intl.NumberFormat("es-ES").format(n);
-
-function statRow(label: string, value: number): string {
-  return `<tr>
-    <td style="padding:10px 0;font-size:14px;color:#404040;border-bottom:1px solid #f0f0f0;">${label}</td>
-    <td style="padding:10px 0;font-size:16px;font-weight:700;text-align:right;border-bottom:1px solid #f0f0f0;">${num(value)}</td>
-  </tr>`;
-}
-
 /**
- * Informe de visibilidad para duenos de empresas publicadas SIN plan Destacado.
- * Muestra sus metricas REALES y anima a destacar para multiplicar visibilidad.
+ * Pitch de venta del plan Destacado para duenos de fichas publicadas sin plan.
+ * Sin informe de metricas: gancho directo ("hasta x10 mas clientes"), maximo
+ * 3 toques por usuario con asuntos distintos.
  */
-export function statsReportEmail(input: StatsReportInput) {
-  const who = input.hasMore
-    ? `${input.companyName} y el resto de tus empresas`
-    : input.companyName;
-  const subject = `${input.companyName} en Destaco: ${num(input.impressions)} apariciones y ${num(input.views)} visitas`;
+export function destacarPitchEmail(input: DestacarPitchInput) {
+  const subjects = [
+    `¿Sabias que ${input.companyName} podria llegar hasta ×10 mas clientes?`,
+    input.firstName
+      ? `${input.firstName}, ¿cuantos clientes estan viendo antes a tu competencia?`
+      : `¿Cuantos clientes estan viendo antes a tu competencia?`,
+    `Ultimo aviso: el 50% de descuento para destacar ${input.companyName}`,
+  ];
+  const subject =
+    subjects[Math.min(Math.max(input.touch, 1), subjects.length) - 1];
+
+  const where =
+    input.categoryNoun && input.cityName
+      ? `buscando <strong>${input.categoryNoun} en ${input.cityName}</strong>`
+      : `buscando negocios como el tuyo`;
+  const crowd =
+    input.competitors > 1
+      ? ` Y tu ficha esta ahi… mezclada entre <strong>${input.competitors} empresas</strong> que compiten por ese mismo cliente.`
+      : ` Y que te encuentren rapido marca la diferencia.`;
+
   const html = layout(
     subject,
-    `<h1 style="font-size:18px;margin:0 0 12px;">${input.firstName ? `Hola, ${input.firstName}. ` : ""}Asi va tu empresa en Destaco</h1>
-     <p style="font-size:15px;line-height:1.55;color:#404040;margin:0 0 16px;">
-       Resumen de lo que ha conseguido <strong>${who}</strong> hasta hoy:
+    `<h1 style="font-size:19px;margin:0 0 12px;">${input.firstName ? `Hola, ${input.firstName}. ` : ""}Hay clientes ${where} ahora mismo</h1>
+     <p style="font-size:15px;line-height:1.6;color:#404040;margin:0 0 16px;">
+       Cada dia entra gente en Destaco.es ${where}.${crowd}
      </p>
-     <table style="width:100%;border-collapse:collapse;margin:0 0 20px;">
-       ${statRow("Apariciones en listados y busquedas", input.impressions)}
-       ${statRow("Visitas a tu ficha", input.views)}
-       ${statRow("Contactos (telefono, email y web)", input.clicks)}
+     <p style="font-size:15px;line-height:1.6;color:#404040;margin:0 0 14px;">
+       Con el plan <strong>Destacado</strong>, <strong>${input.companyName}</strong> pasa a
+       aparecer <strong>la primera</strong>, con su insignia dorada:
+     </p>
+     <table style="border-collapse:collapse;margin:0 0 18px;">
+       <tr><td style="padding:4px 8px 4px 0;color:${ACCENT};font-weight:700;">★</td>
+           <td style="padding:4px 0;font-size:14.5px;color:#404040;">Siempre <strong>por encima de tu competencia</strong> en tu categoria y ciudad</td></tr>
+       <tr><td style="padding:4px 8px 4px 0;color:${ACCENT};font-weight:700;">★</td>
+           <td style="padding:4px 0;font-size:14.5px;color:#404040;">Hasta <strong>×10 mas visibilidad</strong> que una ficha normal: mas visitas, mas llamadas</td></tr>
+       <tr><td style="padding:4px 8px 4px 0;color:${ACCENT};font-weight:700;">★</td>
+           <td style="padding:4px 0;font-size:14.5px;color:#404040;">Insignia «Destacada» que transmite confianza y dispara los clics</td></tr>
      </table>
-     <p style="font-size:15px;line-height:1.55;color:#404040;margin:0 0 8px;">
-       <strong>¿Quieres multiplicar estos numeros?</strong> Las empresas con el plan
-       Destacado aparecen <strong>siempre en las primeras posiciones</strong> de su
-       categoria y ciudad, por delante de su competencia: eso supone hasta
-       <strong>&times;10 de visibilidad</strong> respecto a una ficha normal.
+     <p style="margin:0 0 10px;">${button(input.destacarUrl, "Quiero aparecer el primero")}</p>
+     <p style="font-size:14px;color:#525252;margin:0 0 4px;">
+       <strong>Oferta de lanzamiento: 50% de descuento.</strong> Desde 49,99 &euro;/a&ntilde;o + IVA
+       (sale a poco mas de 4 &euro;/mes). Sin permanencia: lo cancelas cuando quieras.
      </p>
-     <p style="font-size:14px;color:#737373;margin:0 0 20px;">
-       Oferta de lanzamiento: 50% de descuento, desde 49,99 &euro;/a&ntilde;o + IVA. Sin permanencia.
+     <p style="font-size:13px;color:#737373;margin:12px 0 0;">
+       P. D. Tu ficha gratuita seguira siendo gratis siempre. Esto es solo para
+       cuando quieras acelerar.
      </p>
-     <p style="margin:0 0 8px;">${button(input.destacarUrl, "Destacar mi empresa")}</p>
      <p style="font-size:12px;color:#a3a3a3;margin:16px 0 0;">
-       Recibes este informe porque tienes una empresa publicada en Destaco.es.
-       <a href="${input.optOutUrl}" style="color:#737373;">No quiero recibir estos informes</a>.
+       Recibes este correo porque tienes una empresa publicada en Destaco.es.
+       <a href="${input.optOutUrl}" style="color:#737373;">No quiero recibir estos correos</a>.
      </p>`,
   );
   return { subject, html };
