@@ -23,7 +23,7 @@ import { ReviewGate } from "@/components/reviews/review-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/ui/star-rating";
-import { getCompanyBySlug } from "@/lib/data/companies";
+import { getCompanyBySlug, getRelatedCompanies } from "@/lib/data/companies";
 import {
   breadcrumbJsonLd,
   buildMetadata,
@@ -91,6 +91,8 @@ export default async function CompanyPage({ params }: PageProps) {
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();
+
+  const related = await getRelatedCompanies(slug);
 
   const mapsQuery =
     company.latitude && company.longitude
@@ -566,6 +568,43 @@ export default async function CompanyPage({ params }: PageProps) {
           </div>
         </aside>
       </div>
+
+      {related.length > 0 && (
+        <section className="border-t">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <h2 className="text-xl font-semibold tracking-tight">
+              {company.city
+                ? `Otros ${company.categoryName.toLowerCase()} en ${company.city}`
+                : `Otros ${company.categoryName.toLowerCase()}`}
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Compara {company.name} con otras opciones antes de decidir.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {related.map((r) => (
+                <Link
+                  key={r.slug}
+                  href={`/empresa/${r.slug}`}
+                  className="bg-card hover:border-foreground/20 flex items-center justify-between gap-3 rounded-xl border p-4 transition-all hover:shadow-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{r.name}</p>
+                    <p className="text-muted-foreground mt-0.5 text-sm">
+                      {company.categoryName}
+                      {r.city ? ` · ${r.city}` : ""}
+                    </p>
+                  </div>
+                  {r.reviewCount > 0 && (
+                    <span className="text-muted-foreground shrink-0 text-sm font-medium tabular-nums">
+                      {r.rating.toFixed(1).replace(".", ",")} ★
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }

@@ -356,3 +356,78 @@ export function getCompanyBySlug(slug: string): Promise<CompanyDetail | null> {
     () => demoCompanyDetail(slug),
   );
 }
+
+export interface RelatedCompany {
+  slug: string;
+  name: string;
+  city: string | null;
+  rating: number;
+  reviewCount: number;
+}
+
+const relatedSelect = {
+  slug: true,
+  name: true,
+  ratingAvg: true,
+  reviewCount: true,
+  city: { select: { name: true } },
+} satisfies Prisma.CompanySelect;
+
+/**
+ * Empresas relacionadas para enlazar desde la ficha (misma categoria). Prioriza
+ * misma ciudad, luego provincia, luego a nivel nacional. Es la pieza clave del
+ * enlazado interno: teje una red densa entre fichas para que Google descubra y
+ * valore cada una (no solo las que estan en el sitemap).
+ */
+export function getRelatedCompanies(
+  slug: string,
+  limit = 12,
+): Promise<RelatedCompany[]> {
+  return withFallback<RelatedCompany[]>(
+    async () => {
+      const base = await prisma.company.findFirst({
+        where: { slug, status: "PUBLISHED" },
+        select: { categoryId: true, cityId: true, provinceId: true },
+      });
+      if (!base) return [];
+
+      const out: RelatedCompany[] = [];
+      const seen = new Set<string>([slug]);
+
+      const query = (extra: Prisma.CompanyWhereInput) =>
+        prisma.company.findMany({
+          where: {
+            status: "PUBLISHED",
+            categoryId: base.categoryId,
+            slug: { not: slug },
+            ...extra,
+          },
+          orderBy: { rankingScore: "desc" },
+          take: limit,
+          select: relatedSelect,
+        });
+
+      const absorb = (rows: Prisma.CompanyGetPayload<{ select: typeof relatedSelect }>[]) => {
+        for (const r of rows) {
+          if (out.length >= limit || seen.has(r.slug)) continue;
+          seen.add(r.slug);
+          out.push({
+            slug: r.slug,
+            name: r.name,
+            city: r.city?.name ?? null,
+            rating: r.ratingAvg,
+            reviewCount: r.reviewCount,
+          });
+        }
+      };
+
+      if (base.cityId) absorb(await query({ cityId: base.cityId }));
+      if (out.length < limit && base.provinceId)
+        absorb(await query({ provinceId: base.provinceId }));
+      if (out.length < limit) absorb(await query({}));
+
+      return out.slice(0, limit);
+    },
+    () => [],
+  );
+}
