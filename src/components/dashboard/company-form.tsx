@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUploadField } from "@/components/dashboard/image-upload-field";
+import { FaqEditor } from "@/components/dashboard/faq-editor";
 import type { CompanyFormState } from "@/app/dashboard/empresas/actions";
 import type { EditableCompany } from "@/lib/data/dashboard";
 import { cn, COMPANY_SIZE_LABEL, COMPANY_SIZES } from "@/lib/utils";
@@ -163,6 +164,8 @@ export function CompanyForm({
           Escribe un servicio por linea.
         </span>
       </Field>
+
+      <FaqEditor initial={initial?.faqs} />
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Web">

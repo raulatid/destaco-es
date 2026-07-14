@@ -180,6 +180,8 @@ export interface EditableCompany {
   coverImage: string;
   /** Servicios, uno por linea (para el textarea del formulario). */
   services: string;
+  /** FAQs personalizadas del dueño (para el editor del formulario). */
+  faqs: { question: string; answer: string }[];
 }
 
 export function getMyCompany(
@@ -195,6 +197,10 @@ export function getMyCompany(
           province: { select: { slug: true } },
           city: { select: { name: true } },
           services: { orderBy: { order: "asc" }, select: { name: true } },
+          faqs: {
+            orderBy: { order: "asc" },
+            select: { question: true, answer: true },
+          },
         },
       });
       if (!c) return null;
@@ -216,6 +222,7 @@ export function getMyCompany(
         priceFrom: c.priceFrom?.toString() ?? "",
         coverImage: c.coverImage ?? "",
         services: c.services.map((s) => s.name).join("\n"),
+        faqs: c.faqs.map((f) => ({ question: f.question, answer: f.answer })),
       };
     },
     () => null,

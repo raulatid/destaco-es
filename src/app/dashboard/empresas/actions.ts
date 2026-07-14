@@ -75,6 +75,8 @@ const CompanySchema = z.object({
       .optional(),
   ),
   services: z.string().max(4000).optional(),
+  // FAQs personalizadas: JSON [{question, answer}] serializado por el editor.
+  faqs: z.string().max(30_000).optional(),
   // Foto de portada: data URL (subida desde el ordenador y comprimida en el
   // cliente) o una URL http(s). El limite cubre el data URL ya optimizado.
   coverImage: z
@@ -96,6 +98,34 @@ function parseServices(raw: string | undefined) {
     .filter(Boolean)
     .slice(0, 50)
     .map((name, order) => ({ name: name.slice(0, 120), order }));
+}
+
+/** Convierte el JSON del editor de FAQs en filas Faq (personalizadas, no IA). */
+function parseFaqs(raw: string | undefined) {
+  if (!raw) return [];
+  let arr: unknown;
+  try {
+    arr = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter(
+      (f): f is { question: string; answer: string } =>
+        !!f &&
+        typeof (f as { question?: unknown }).question === "string" &&
+        typeof (f as { answer?: unknown }).answer === "string" &&
+        (f as { question: string }).question.trim().length > 0 &&
+        (f as { answer: string }).answer.trim().length > 0,
+    )
+    .slice(0, 20)
+    .map((f, order) => ({
+      question: f.question.trim().slice(0, 300),
+      answer: f.answer.trim().slice(0, 2000),
+      generatedByAI: false,
+      order,
+    }));
 }
 
 async function uniqueSlug(name: string, city?: string): Promise<string> {
@@ -209,6 +239,7 @@ export async function createCompany(
       source: "CLAIMED",
       status: "PUBLISHED",
       services: { create: parseServices(d.services) },
+      faqs: { create: parseFaqs(d.faqs) },
     },
   });
 
@@ -269,6 +300,11 @@ export async function updateCompany(
       provinceId,
       cityId,
       services: { deleteMany: {}, create: parseServices(d.services) },
+      // Solo reemplazamos las FAQs si el dueño envió alguna (si no, dejamos las
+      // que hubiera —IA o previas— para no borrarlas sin querer).
+      ...(parseFaqs(d.faqs).length > 0
+        ? { faqs: { deleteMany: {}, create: parseFaqs(d.faqs) } }
+        : {}),
     },
   });
 

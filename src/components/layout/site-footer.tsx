@@ -114,6 +114,26 @@ export function SiteFooter() {
               Datos de fuentes publicas y verificadas.
             </p>
             <p className="text-muted-foreground text-xs">
+              Colaboradores:{" "}
+              <a
+                href="https://comprado.es"
+                target="_blank"
+                rel="noopener"
+                className="text-foreground font-medium underline-offset-4 hover:underline"
+              >
+                Comprado.es
+              </a>{" "}
+              ·{" "}
+              <a
+                href="https://liar.es"
+                target="_blank"
+                rel="noopener"
+                className="text-foreground font-medium underline-offset-4 hover:underline"
+              >
+                Liar.es
+              </a>
+            </p>
+            <p className="text-muted-foreground text-xs">
               Desarrollado por{" "}
               <a
                 href="https://vertigomkt.com"

@@ -48,17 +48,23 @@ export async function enrichCompany(companyId: string): Promise<Enrichment> {
       },
     });
 
-    // FAQs: se reemplazan las generadas previamente por IA.
-    await tx.faq.deleteMany({ where: { companyId, generatedByAI: true } });
-    await tx.faq.createMany({
-      data: enrichment.faqs.map((faq, i) => ({
-        companyId,
-        question: faq.question,
-        answer: faq.answer,
-        generatedByAI: true,
-        order: i,
-      })),
+    // FAQs: si el dueño puso FAQs propias (no generadas por IA) mandan las
+    // suyas y no tocamos nada. Si no, (re)generamos las de IA.
+    const ownerFaqs = await tx.faq.count({
+      where: { companyId, generatedByAI: false },
     });
+    if (ownerFaqs === 0) {
+      await tx.faq.deleteMany({ where: { companyId, generatedByAI: true } });
+      await tx.faq.createMany({
+        data: enrichment.faqs.map((faq, i) => ({
+          companyId,
+          question: faq.question,
+          answer: faq.answer,
+          generatedByAI: true,
+          order: i,
+        })),
+      });
+    }
 
     // Servicios: solo se anaden si la empresa no tenia ninguno.
     if (company.services.length === 0) {
