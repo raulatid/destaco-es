@@ -23,6 +23,7 @@ const LEGAL_LINKS = [
   { label: "Privacidad", href: "/legal/privacidad" },
   { label: "Cookies", href: "/legal/cookies" },
   { label: "Terminos", href: "/legal/terminos" },
+  { label: "Canal de denuncias", href: "https://canaldedenunciasseguro.es" },
 ];
 
 function FooterColumn({
@@ -36,16 +37,29 @@ function FooterColumn({
     <div>
       <h3 className="text-foreground mb-3 text-sm font-semibold">{title}</h3>
       <ul className="space-y-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
+        {links.map((link) =>
+          link.href.startsWith("http") ? (
+            <li key={link.href}>
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              >
+                {link.label}
+              </a>
+            </li>
+          ) : (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ),
+        )}
       </ul>
     </div>
   );
