@@ -155,7 +155,7 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 className="text-foreground font-medium underline-offset-4 hover:underline"
               >
-                Vértigo Marketing
+                Agencia SEO Murcia
               </a>
             </p>
             <p className="text-muted-foreground text-xs">
